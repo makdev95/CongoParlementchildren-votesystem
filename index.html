@@ -1,0 +1,337 @@
+<!--
+Parlement des Enfants — Corrected Working Version
+Single-file HTML (save as .html and open in a modern browser on the tablet).
+Fixes applied:
+ - Stable, fully-working event wiring for Admin PIN flow and Results flow (no listener overrides).
+ - Clear separation between "Admin" and "Voir résultats des votes" PIN flows using a reusable PIN modal with a callback.
+ - Voting increments votes, updates total/last, and hides per-candidate counts on main screen.
+ - Results modal displays counts and winners and allows export/reset.
+ - Admin modal adds/removes candidates (Président, Vice-Président, Secrétaire Général).
+ - LocalStorage persistence under key `parlement_congo_v4`.
+ - Simple confetti + emoji celebration after each vote.
+-->
+
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Parlement des Enfants — Vote (Corrected)</title>
+<style>
+  :root{--bg:#f4fbff;--card:#fff;--accent:#0277bd;--muted:#55607a;--radius:12px}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#e9f7ff);color:#082033;display:flex;align-items:flex-start;justify-content:center;padding:18px}
+  .container{width:100%;max-width:1100px}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#066fb2,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
+  h1{margin:0;font-size:20px}
+  .subtitle{color:var(--muted);font-size:13px}
+  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(6,20,40,0.06)}
+  .layout{display:grid;grid-template-columns:1fr 320px;gap:14px}
+  @media (max-width:980px){.layout{grid-template-columns:1fr}}
+
+  .role{margin-bottom:12px}
+  .role h2{margin:8px 0;font-size:16px}
+  .hlist{display:flex;gap:10px;overflow:auto;padding:8px}
+  .card-candidate{min-width:150px;max-width:160px;background:linear-gradient(180deg,#fff,#f7fdff);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(6,182,212,0.06)}
+  .avatar{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff}
+  .cand-name{font-weight:800;text-align:center}
+  .vote-btn{width:100%;padding:10px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
+  .count{font-weight:900;margin-top:4px;display:none}
+
+  .aside .small{font-size:13px;color:var(--muted)}
+  .controls{display:flex;gap:8px;margin-top:12px}
+  .btn{padding:9px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.ghost{background:transparent;border:2px solid #e6f7ff}
+
+  /* modals */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:14px;z-index:50}
+  .modal.open{display:flex}
+  .modal-card{width:100%;max-width:760px;background:var(--card);padding:14px;border-radius:12px;box-shadow:0 12px 36px rgba(8,24,44,0.08)}
+  label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
+  input[type=text], input[type=password], select{width:100%;padding:10px;border-radius:8px;border:1px solid #eef7ff;margin-top:6px}
+
+  canvas#confetti{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:9999}
+  .emoji{position:fixed;z-index:10000;pointer-events:none;font-size:26px;opacity:0;transform:translateY(0);transition:transform 1s,opacity 1s}
+
+  .results-table{width:100%;border-collapse:collapse;margin-top:8px}
+  .results-table th,.results-table td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left}
+  .winner{background:linear-gradient(90deg,#fff9eb,#f0fff6);padding:10px;border-radius:8px;margin-bottom:8px}
+  footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="container">
+  <header>
+    <div class="logo">PE</div>
+    <div>
+      <h1>Parlement des Enfants en République du Congo— Élection 2025</h1>
+      <div class="subtitle">Président, Vice-Président & Secrétaire Général — République du Congo</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="card">
+      <section class="role">
+        <h2>Président</h2>
+        <div class="hlist" id="presList" aria-live="polite"></div>
+      </section>
+
+      <section class="role">
+        <h2>Vice-Président</h2>
+        <div class="hlist" id="vpList" aria-live="polite"></div>
+      </section>
+
+      <section class="role">
+        <h2>Secrétaire Général</h2>
+        <div class="hlist" id="secList" aria-live="polite"></div>
+      </section>
+
+      <div style="margin-top:10px" class="small">Conseils: un enfant appuie sur le bouton "Voter" sous le candidat choisi. Les votes sont anonyme et stockés localement. Les comptes ne sont pas visibles ici.</div>
+    </main>
+
+    <aside class="card aside">
+      <h3>Contrôles</h3>
+      <div class="small" style="margin-top:8px">Total de votes: <strong id="total">0</strong></div>
+      <div class="small" style="margin-top:6px">Dernier vote: <span id="last">—</span></div>
+
+      <div class="controls">
+        <button class="btn primary" id="btnAdmin">Admin</button>
+        <button class="btn ghost" id="btnResults">Voir résultats des votes</button>
+      </div>
+
+      <div style="margin-top:12px" class="small">Les résultats sont protégés par le code administrateur.</div>
+    </aside>
+  </div>
+
+  <footer>République du Congo - UNICEF</footer>
+</div>
+
+<!-- PIN modal (reusable) -->
+<div id="pinModal" class="modal" aria-hidden="true">
+  <div class="modal-card">
+    <h3>Code administrateur</h3>
+    <input id="pinInput" type="password" placeholder="Entrer le code" />
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn ghost" id="pinCancel">Annuler</button>
+      <button class="btn primary" id="pinOk">Valider</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin modal -->
+<div id="adminModal" class="modal" aria-hidden="true">
+  <div class="modal-card">
+    <h3>Administration — Gérer candidats</h3>
+    <div class="small">Ajouter un candidat (sélectionnez le rôle).</div>
+    <label>Nom du candidat</label>
+    <input type="text" id="adminName" placeholder="Ex: Aminata" />
+    <label>Emoji (optionnel)</label>
+    <input type="text" id="adminEmoji" placeholder="Ex: 🧑‍🎓" />
+    <label>Rôle</label>
+    <select id="adminRole"><option value="pres">Président</option><option value="vice">Vice-Président</option><option value="sec">Secrétaire Général</option></select>
+
+    <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+      <button class="btn ghost" id="adminClose">Fermer</button>
+      <button class="btn primary" id="adminAdd">Ajouter</button>
+    </div>
+
+    <div style="margin-top:12px">
+      <h4>Liste des candidats</h4>
+      <div id="adminList"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn ghost" id="adminReset">Réinitialiser votes</button>
+      <button class="btn ghost" id="adminExport">Exporter JSON</button>
+    </div>
+  </div>
+</div>
+
+<!-- Results modal -->
+<div id="resultsModal" class="modal" aria-hidden="true">
+  <div class="modal-card">
+    <h2>Résultats des votes</h2>
+    <div id="winnerBanner" class="winner" style="display:none"></div>
+
+    <h3>Président</h3>
+    <table class="results-table" id="presResults"><thead><tr><th>Candidat</th><th>Voix</th></tr></thead><tbody></tbody></table>
+
+    <h3>Vice-Président</h3>
+    <table class="results-table" id="vpResults"><thead><tr><th>Candidat</th><th>Voix</th></tr></thead><tbody></tbody></table>
+
+    <h3>Secrétaire Général</h3>
+    <table class="results-table" id="secResults"><thead><tr><th>Candidat</th><th>Voix</th></tr></thead><tbody></tbody></table>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn ghost" id="resultsClose">Fermer</button>
+      <button class="btn ghost" id="resultsExport">Exporter JSON</button>
+      <button class="btn ghost" id="resultsReset">Réinitialiser votes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const STORAGE_KEY = 'parlement_congo_v4';
+  const ADMIN_PIN = '1234'; // change this before production
+
+  // Canvas confetti
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize); resize();
+
+  let confetti = [];
+  function spawnConfetti(x,y){ const colors=['#1c8a00','#f7d117','#d91f2a','#3b82f6','#a78bfa']; for(let i=0;i<40;i++){ confetti.push({x,y,vx:(Math.random()-0.5)*6, vy:(Math.random()*-8)-2, life:60+Math.random()*40, size:6+Math.random()*8, color: colors[Math.floor(Math.random()*colors.length)]}); } if(!running) runConfetti(); }
+  let running=false; function runConfetti(){ running=true; (function loop(){ ctx.clearRect(0,0,canvas.width,canvas.height); for(let i=confetti.length-1;i>=0;i--){ const p=confetti[i]; p.x+=p.vx; p.y+=p.vy; p.vy += 0.35; p.life--; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); if(p.life<=0||p.y>canvas.height+50) confetti.splice(i,1); } if(confetti.length>0) requestAnimationFrame(loop); else running=false; })(); }
+
+  function floatEmoji(x,y){ const emojis=['🎉','✨','🎈','👏','🥳']; for(let i=0;i<6;i++){ const el=document.createElement('div'); el.className='emoji'; el.textContent = emojis[Math.floor(Math.random()*emojis.length)]; document.body.appendChild(el); el.style.left = (x + (Math.random()*80-40)) + 'px'; el.style.top = (y + (Math.random()*40-10)) + 'px'; requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateY(-120px) scale(1.2)'; }); setTimeout(()=>el.remove(),1400); } }
+
+  // load/save
+  function load(){ try{ const s = localStorage.getItem(STORAGE_KEY); if(!s){ const initial = { pres:[{id:'p1',name:'Aminata',emoji:'',votes:0},{id:'p2',name:'Jean',emoji:'',votes:0}], vice:[{id:'v1',name:'Maya',emoji:'',votes:0},{id:'v2',name:'Lucas',emoji:'',votes:0}], sec:[{id:'s1',name:'Pierre',emoji:'',votes:0}], total:0,last:null }; localStorage.setItem(STORAGE_KEY, JSON.stringify(initial)); return initial; } return JSON.parse(s);}catch(e){ console.error(e); return {pres:[],vice:[],sec:[],total:0,last:null}; }}
+  function save(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+  let state = load();
+
+  // DOM refs
+  const presList = document.getElementById('presList');
+  const vpList = document.getElementById('vpList');
+  const secList = document.getElementById('secList');
+  const totalEl = document.getElementById('total');
+  const lastEl = document.getElementById('last');
+  const btnAdmin = document.getElementById('btnAdmin');
+  const btnResults = document.getElementById('btnResults');
+
+  const pinModal = document.getElementById('pinModal');
+  const pinInput = document.getElementById('pinInput');
+  const pinOk = document.getElementById('pinOk');
+  const pinCancel = document.getElementById('pinCancel');
+
+  const adminModal = document.getElementById('adminModal');
+  const adminName = document.getElementById('adminName');
+  const adminEmoji = document.getElementById('adminEmoji');
+  const adminRole = document.getElementById('adminRole');
+  const adminAdd = document.getElementById('adminAdd');
+  const adminClose = document.getElementById('adminClose');
+  const adminList = document.getElementById('adminList');
+  const adminReset = document.getElementById('adminReset');
+  const adminExport = document.getElementById('adminExport');
+
+  const resultsModal = document.getElementById('resultsModal');
+  const presResults = document.querySelector('#presResults tbody');
+  const vpResults = document.querySelector('#vpResults tbody');
+  const secResults = document.querySelector('#secResults tbody');
+  const winnerBanner = document.getElementById('winnerBanner');
+  const resultsClose = document.getElementById('resultsClose');
+  const resultsExport = document.getElementById('resultsExport');
+  const resultsReset = document.getElementById('resultsReset');
+
+  // utility
+  function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
+  function avatarDataUrl(){ // simple SVG avatar (Congo scarf)
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23fff'/><g transform='translate(0,42)'><path d='M0,40 L120,40 L120,70 L0,70 Z' fill='%23eee'/><polygon points='0,40 120,0 120,20 0,60' fill='%2308a200'/><polygon points='0,60 120,20 120,40 0,80' fill='%23f7d117'/><polygon points='0,80 120,40 120,60 0,100' fill='%23d91f2a'/></g><circle cx='60' cy='44' r='28' fill='%23f6d6b8'/><circle cx='50' cy='42' r='3' fill='%230b2b3a'/><circle cx='70' cy='42' r='3' fill='%230b2b3a'/><path d='M50,52 Q60,60 70,52' stroke='%230b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>`; return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg); }
+
+  // render candidate cards (counts hidden)
+  function makeCard(candidate, role){
+    const card = document.createElement('div'); card.className='card-candidate';
+    const avatar = document.createElement('div'); avatar.className='avatar';
+    if(candidate.emoji && candidate.emoji.trim()){ avatar.textContent = candidate.emoji; }
+    else { const img = document.createElement('img'); img.src = avatarDataUrl(); img.width = 84; img.height = 84; img.alt = 'avatar'; img.style.borderRadius='50%'; avatar.appendChild(img); }
+    const name = document.createElement('div'); name.className='cand-name'; name.textContent = candidate.name;
+    const btn = document.createElement('button'); btn.className='vote-btn'; btn.textContent='Voter';
+    const count = document.createElement('div'); count.className='count'; count.textContent = candidate.votes || 0; // hidden on main UI
+
+    btn.addEventListener('click', function(){ // record vote
+      candidate.votes = (candidate.votes || 0) + 1;
+      state.total = (state.total || 0) + 1;
+      state.last = new Date().toLocaleString();
+      save(state);
+      totalEl.textContent = state.total;
+      lastEl.textContent = state.last;
+      // show celebration
+      const rect = btn.getBoundingClientRect(); const x = rect.left + rect.width/2; const y = rect.top + rect.height/2;
+      spawnConfetti(x,y); floatEmoji(x,y);
+    });
+
+    card.appendChild(avatar); card.appendChild(name); card.appendChild(btn); card.appendChild(count);
+    return card;
+  }
+
+  function renderAll(){ presList.innerHTML=''; vpList.innerHTML=''; secList.innerHTML='';
+    (state.pres||[]).forEach(c=>presList.appendChild(makeCard(c,'pres')));
+    (state.vice||[]).forEach(c=>vpList.appendChild(makeCard(c,'vice')));
+    (state.sec||[]).forEach(c=>secList.appendChild(makeCard(c,'sec')));
+    totalEl.textContent = state.total || 0; lastEl.textContent = state.last || '—';
+  }
+
+  // show/hide modals
+  function showModal(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
+  function hideModal(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
+
+  // PIN flow with callback
+  let pinCallback = null;
+  function openPinFlow(callback){ pinCallback = callback; pinInput.value=''; showModal(pinModal); pinInput.focus(); }
+
+  pinOk.addEventListener('click', function(){ const v = pinInput.value.trim(); if(v === ADMIN_PIN){ hideModal(pinModal); if(typeof pinCallback === 'function') pinCallback(); pinCallback = null; } else { alert('PIN invalide'); } });
+  pinCancel.addEventListener('click', function(){ hideModal(pinModal); pinCallback = null; });
+
+  // Admin actions
+  btnAdmin.addEventListener('click', function(){ openPinFlow(function(){ showModal(adminModal); renderAdminList(); }); });
+
+  function renderAdminList(){ adminList.innerHTML=''; function section(title, arr, role){ const h=document.createElement('div'); h.style.fontWeight='700'; h.style.marginTop='6px'; h.textContent = title; adminList.appendChild(h); (arr||[]).forEach(c=>{ const row=document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='6px 0'; row.innerHTML = `<div>${c.emoji?c.emoji+' ':''}<strong>${c.name}</strong> <span style='color:#6b7280'>(votes: ${c.votes||0})</span></div>`; const del=document.createElement('button'); del.className='btn ghost'; del.textContent='Supprimer'; del.addEventListener('click', function(){ if(confirm('Supprimer ce candidat ?')){ if(role==='pres') state.pres = state.pres.filter(x=>x.id!==c.id); else if(role==='vice') state.vice = state.vice.filter(x=>x.id!==c.id); else state.sec = state.sec.filter(x=>x.id!==c.id); save(state); renderAll(); renderAdminList(); } }); row.appendChild(del); adminList.appendChild(row); }); }
+    section('Président', state.pres, 'pres'); section('Vice-Président', state.vice, 'vice'); section('Secrétaire Général', state.sec, 'sec');
+  }
+
+  adminAdd.addEventListener('click', function(){ const name = adminName.value.trim(); const emoji = adminEmoji.value.trim(); const role = adminRole.value; if(!name){ alert('Entrez le nom du candidat'); return; } const id = uid(role==='pres'?'p':role==='vice'?'v':'s'); const entry = { id, name, emoji, votes: 0 }; if(role==='pres'){ state.pres.push(entry);} else if(role==='vice'){ state.vice.push(entry); } else { state.sec.push(entry); } save(state); adminName.value=''; adminEmoji.value=''; renderAll(); renderAdminList(); });
+
+  adminClose.addEventListener('click', function(){ hideModal(adminModal); });
+  adminReset.addEventListener('click', function(){ if(confirm('Remettre tous les compteurs à zéro ?')){ (state.pres||[]).forEach(x=>x.votes=0); (state.vice||[]).forEach(x=>x.votes=0); (state.sec||[]).forEach(x=>x.votes=0); state.total = 0; state.last = null; save(state); renderAll(); renderAdminList(); alert('Réinitialisé'); } });
+  adminExport.addEventListener('click', exportState);
+
+  // Results flow
+  btnResults.addEventListener('click', function(){ openPinFlow(function(){ openResultsModal(); }); });
+
+  function openResultsModal(){ // populate tables
+    presResults.innerHTML=''; vpResults.innerHTML=''; secResults.innerHTML='';
+    (state.pres||[]).forEach(c=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${c.name}</td><td>${c.votes||0}</td>`; presResults.appendChild(tr); });
+    (state.vice||[]).forEach(c=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${c.name}</td><td>${c.votes||0}</td>`; vpResults.appendChild(tr); });
+    (state.sec||[]).forEach(c=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${c.name}</td><td>${c.votes||0}</td>`; secResults.appendChild(tr); });
+
+    // winners
+    function getWinner(arr){ if(!arr||arr.length===0) return {names:[],max:0}; let max=-1; let winners=[]; arr.forEach(a=>{ const v = a.votes||0; if(v>max){ max=v; winners=[a.name]; } else if(v===max){ winners.push(a.name); } }); return {names:winners,max}; }
+    const wp = getWinner(state.pres), wv = getWinner(state.vice), ws = getWinner(state.sec);
+    let text = '';
+    if(wp.names.length) text += `<strong>Président:</strong> ${wp.names.join(', ')} (${wp.max} voix)`;
+    if(wv.names.length) text += ` &nbsp; • &nbsp; <strong>Vice-Président:</strong> ${wv.names.join(', ')} (${wv.max} voix)`;
+    if(ws.names.length) text += ` &nbsp; • &nbsp; <strong>Secrétaire G.:</strong> ${ws.names.join(', ')} (${ws.max} voix)`;
+    winnerBanner.innerHTML = text; winnerBanner.style.display = text ? 'block' : 'none';
+
+    showModal(resultsModal);
+  }
+
+  resultsClose.addEventListener('click', function(){ hideModal(resultsModal); });
+  resultsExport.addEventListener('click', exportState);
+  resultsReset.addEventListener('click', function(){ if(confirm('Remettre tous les compteurs à zéro ?')){ (state.pres||[]).forEach(x=>x.votes=0); (state.vice||[]).forEach(x=>x.votes=0); (state.sec||[]).forEach(x=>x.votes=0); state.total = 0; state.last = null; save(state); renderAll(); hideModal(resultsModal); alert('Réinitialisé'); } });
+
+  function exportState(){ const data = JSON.stringify(state,null,2); const blob = new Blob([data],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'votes_parlement.json'; a.click(); URL.revokeObjectURL(url); }
+
+  // helpers
+  function save(st){ saveState(st||state); }
+  function saveState(st){ localStorage.setItem(STORAGE_KEY, JSON.stringify(st)); state = st || state; }
+
+  function spawnConfetti(x,y){ // small wrapper uses earlier defined confetti array
+    const colors=['#1c8a00','#f7d117','#d91f2a','#3b82f6','#a78bfa']; for(let i=0;i<30;i++){ confetti.push({x,y,vx:(Math.random()-0.5)*6, vy:(Math.random()*-7)-2, life:50+Math.random()*30, size:6+Math.random()*6, color: colors[Math.floor(Math.random()*colors.length)]}); }
+    if(!running) runConfetti(); }
+
+  function floatEmoji(x,y){ const emojis=['🎉','✨','🎈','👏','🥳']; for(let i=0;i<6;i++){ const el = document.createElement('div'); el.className='emoji'; el.textContent = emojis[Math.floor(Math.random()*emojis.length)]; document.body.appendChild(el); el.style.left = (x + (Math.random()*80-40)) + 'px'; el.style.top = (y + (Math.random()*40-10)) + 'px'; requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateY(-120px) scale(1.2)'; }); setTimeout(()=>el.remove(),1400); } }
+
+  // start
+  renderAll();
+})();
+</script>
+</body>
+</html>
