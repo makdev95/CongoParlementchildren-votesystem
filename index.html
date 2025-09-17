@@ -1,11 +1,24 @@
+<!--
+Parlement des Enfants — Corrected Working Version
+Single-file HTML (save as .html and open in a modern browser on the tablet).
+Fixes applied:
+ - Stable, fully-working event wiring for Admin PIN flow and Results flow (no listener overrides).
+ - Clear separation between "Admin" and "Voir résultats des votes" PIN flows using a reusable PIN modal with a callback.
+ - Voting increments votes, updates total/last, and hides per-candidate counts on main screen.
+ - Results modal displays counts and winners and allows export/reset.
+ - Admin modal adds/removes candidates (Président, Vice-Président, Secrétaire Général).
+ - LocalStorage persistence under key `parlement_congo_v4`.
+ - Simple confetti + emoji celebration after each vote.
+-->
+
 <!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Parlement des Enfants — Vote (Fixed)</title>
+<title>Parlement des Enfants — Vote (Corrected)</title>
 <style>
-  :root{--bg:#f4fbff;--card:#fff;--accent:#0277bd;--muted:#55607a}
+  :root{--bg:#f4fbff;--card:#fff;--accent:#0277bd;--muted:#55607a;--radius:12px}
   *{box-sizing:border-box}
   body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#e9f7ff);color:#082033;display:flex;align-items:flex-start;justify-content:center;padding:18px}
   .container{width:100%;max-width:1100px}
@@ -14,8 +27,9 @@
   h1{margin:0;font-size:20px}
   .subtitle{color:var(--muted);font-size:13px}
   .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(6,20,40,0.06)}
-  .layout{display:grid;grid-template-columns:1fr 360px;gap:14px}
+  .layout{display:grid;grid-template-columns:1fr 320px;gap:14px}
   @media (max-width:980px){.layout{grid-template-columns:1fr}}
+
   .role{margin-bottom:12px}
   .role h2{margin:8px 0;font-size:16px}
   .hlist{display:flex;gap:10px;overflow:auto;padding:8px}
@@ -24,27 +38,27 @@
   .cand-name{font-weight:800;text-align:center}
   .vote-btn{width:100%;padding:10px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
   .count{font-weight:900;margin-top:4px;display:none}
+
   .aside .small{font-size:13px;color:var(--muted)}
   .controls{display:flex;gap:8px;margin-top:12px}
   .btn{padding:9px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
   .btn.primary{background:var(--accent);color:#fff}
   .btn.ghost{background:transparent;border:2px solid #e6f7ff}
+
+  /* modals */
   .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:14px;z-index:50}
   .modal.open{display:flex}
   .modal-card{width:100%;max-width:760px;background:var(--card);padding:14px;border-radius:12px;box-shadow:0 12px 36px rgba(8,24,44,0.08)}
   label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
-  input[type=text], input[type=password], select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #eef7ff;margin-top:6px}
-  textarea{min-height:80px;resize:vertical}
+  input[type=text], input[type=password], select{width:100%;padding:10px;border-radius:8px;border:1px solid #eef7ff;margin-top:6px}
+
   canvas#confetti{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:9999}
   .emoji{position:fixed;z-index:10000;pointer-events:none;font-size:26px;opacity:0;transform:translateY(0);transition:transform 1s,opacity 1s}
+
   .results-table{width:100%;border-collapse:collapse;margin-top:8px}
   .results-table th,.results-table td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left}
   .winner{background:linear-gradient(90deg,#fff9eb,#f0fff6);padding:10px;border-radius:8px;margin-bottom:8px}
   footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
-  .voter-badge{display:inline-flex;gap:8px;align-items:center;padding:8px;background:#f1fbff;border-radius:10px;border:1px solid #e6f7ff;font-weight:700}
-  .voter-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-  .voter-item{padding:8px 10px;border-radius:12px;background:#fff;border:1px solid #e8f7ff;cursor:pointer;display:flex;gap:8px;align-items:center}
-  .muted{color:var(--muted);font-size:13px}
 </style>
 </head>
 <body>
@@ -53,18 +67,13 @@
   <header>
     <div class="logo">PE</div>
     <div>
-      <h1>Parlement des Enfants — Élection 2025</h1>
+      <h1>Parlement des Enfants — Élection</h1>
       <div class="subtitle">Président, Vice-Président & Secrétaire Général — République du Congo</div>
     </div>
   </header>
 
   <div class="layout">
     <main class="card">
-      <section style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div id="selectedVoter" class="voter-badge">Aucun électeur sélectionné</div>
-        <div><button type="button" class="btn ghost" id="openVoterPicker">Sélectionner électeur</button></div>
-      </section>
-
       <section class="role">
         <h2>Président</h2>
         <div class="hlist" id="presList" aria-live="polite"></div>
@@ -80,7 +89,7 @@
         <div class="hlist" id="secList" aria-live="polite"></div>
       </section>
 
-      <div style="margin-top:10px" class="small">Conseils: sélectionne d'abord ton nom, puis appuie sur le bouton "Voter" sous le candidat choisi. Chaque électeur peut voter une fois par rôle.</div>
+      <div style="margin-top:10px" class="small">Conseils: un enfant appuie sur le bouton "Voter" sous le candidat choisi. Les votes sont anonyme et stockés localement. Les comptes ne sont pas visibles ici.</div>
     </main>
 
     <aside class="card aside">
@@ -89,27 +98,15 @@
       <div class="small" style="margin-top:6px">Dernier vote: <span id="last">—</span></div>
 
       <div class="controls">
-        <button type="button" class="btn primary" id="btnAdmin">Admin</button>
-        <button type="button" class="btn ghost" id="btnResults">Voir résultats des votes</button>
+        <button class="btn primary" id="btnAdmin">Admin</button>
+        <button class="btn ghost" id="btnResults">Voir résultats des votes</button>
       </div>
 
       <div style="margin-top:12px" class="small">Les résultats sont protégés par le code administrateur.</div>
     </aside>
   </div>
 
-  <footer>Election Parlement des enfants - Republique du Congo </footer>
-</div>
-
-<!-- Voter picker modal -->
-<div id="voterModal" class="modal" aria-hidden="true">
-  <div class="modal-card">
-    <h3>Sélectionner l'électeur</h3>
-    <div class="small">Tap sur le nom de l'électeur puis fermez la fenêtre.</div>
-    <div id="voterList" class="voter-list"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-      <button type="button" class="btn ghost" id="voterClose">Fermer</button>
-    </div>
-  </div>
+  <footer>Design: avatars enfants avec écharpes aux couleurs du Congo • Simple & offline</footer>
 </div>
 
 <!-- PIN modal (reusable) -->
@@ -118,8 +115,8 @@
     <h3>Code administrateur</h3>
     <input id="pinInput" type="password" placeholder="Entrer le code" />
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-      <button type="button" class="btn ghost" id="pinCancel">Annuler</button>
-      <button type="button" class="btn primary" id="pinOk">Valider</button>
+      <button class="btn ghost" id="pinCancel">Annuler</button>
+      <button class="btn primary" id="pinOk">Valider</button>
     </div>
   </div>
 </div>
@@ -127,48 +124,28 @@
 <!-- Admin modal -->
 <div id="adminModal" class="modal" aria-hidden="true">
   <div class="modal-card">
-    <h3>Administration — Gérer candidats & électeurs</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div>
-        <label>Nom du candidat</label>
-        <input type="text" id="adminName" placeholder="Ex: Elenga" />
-        <label>Emoji (optionnel)</label>
-        <input type="text" id="adminEmoji" placeholder="Ex: 🧑‍🎓" />
-        <label>Rôle</label>
-        <select id="adminRole"><option value="pres">Président</option><option value="vice">Vice-Président</option><option value="sec">Secrétaire Général</option></select>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-          <button type="button" class="btn ghost" id="adminClose">Fermer</button>
-          <button type="button" class="btn primary" id="adminAdd">Ajouter candidat</button>
-        </div>
-      </div>
-      <div>
-        <label>Nom de l'électeur</label>
-        <input type="text" id="adminVoterName" placeholder="Ex: Jospin" />
-        <label>Emoji (optionnel)</label>
-        <input type="text" id="adminVoterEmoji" placeholder="Ex: 😀" />
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-          <button type="button" class="btn ghost" id="adminVoterClose">Fermer</button>
-          <button type="button" class="btn primary" id="adminVoterAdd">Ajouter électeur</button>
-        </div>
-        <hr style="margin:12px 0" />
-        <label>Ajouter des électeurs en masse (une ligne = un nom)</label>
-        <textarea id="bulkVoters" placeholder="Collez un nom par ligne (ex: Koffi)"></textarea>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-          <button type="button" class="btn ghost" id="adminBulkAddVoters">Ajouter électeurs en masse</button>
-        </div>
-      </div>
+    <h3>Administration — Gérer candidats</h3>
+    <div class="small">Ajouter un candidat (sélectionnez le rôle).</div>
+    <label>Nom du candidat</label>
+    <input type="text" id="adminName" placeholder="Ex: Aminata" />
+    <label>Emoji (optionnel)</label>
+    <input type="text" id="adminEmoji" placeholder="Ex: 🧑‍🎓" />
+    <label>Rôle</label>
+    <select id="adminRole"><option value="pres">Président</option><option value="vice">Vice-Président</option><option value="sec">Secrétaire Général</option></select>
+
+    <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+      <button class="btn ghost" id="adminClose">Fermer</button>
+      <button class="btn primary" id="adminAdd">Ajouter</button>
     </div>
 
     <div style="margin-top:12px">
       <h4>Liste des candidats</h4>
       <div id="adminList"></div>
-      <h4 style="margin-top:10px">Liste des électeurs</h4>
-      <div id="adminVoterList"></div>
     </div>
 
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-      <button type="button" class="btn ghost" id="adminReset">Réinitialiser votes</button>
-      <button type="button" class="btn ghost" id="adminExport">Exporter JSON</button>
+      <button class="btn ghost" id="adminReset">Réinitialiser votes</button>
+      <button class="btn ghost" id="adminExport">Exporter JSON</button>
     </div>
   </div>
 </div>
@@ -180,182 +157,181 @@
     <div id="winnerBanner" class="winner" style="display:none"></div>
 
     <h3>Président</h3>
-    <table class="results-table" id="presResults"><thead><tr><th>Candidat</th><th>Voix</th><th>Électeurs</th></tr></thead><tbody></tbody></table>
+    <table class="results-table" id="presResults"><thead><tr><th>Candidat</th><th>Voix</th></tr></thead><tbody></tbody></table>
 
     <h3>Vice-Président</h3>
-    <table class="results-table" id="vpResults"><thead><tr><th>Candidat</th><th>Voix</th><th>Électeurs</th></tr></thead><tbody></tbody></table>
+    <table class="results-table" id="vpResults"><thead><tr><th>Candidat</th><th>Voix</th></tr></thead><tbody></tbody></table>
 
     <h3>Secrétaire Général</h3>
-    <table class="results-table" id="secResults"><thead><tr><th>Candidat</th><th>Voix</th><th>Électeurs</th></tr></thead><tbody></tbody></table>
+    <table class="results-table" id="secResults"><thead><tr><th>Candidat</th><th>Voix</th></tr></thead><tbody></tbody></table>
 
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-      <button type="button" class="btn ghost" id="resultsClose">Fermer</button>
-      <button type="button" class="btn ghost" id="resultsExport">Exporter JSON</button>
-      <button type="button" class="btn ghost" id="resultsReset">Réinitialiser votes</button>
+      <button class="btn ghost" id="resultsClose">Fermer</button>
+      <button class="btn ghost" id="resultsExport">Exporter JSON</button>
+      <button class="btn ghost" id="resultsReset">Réinitialiser votes</button>
     </div>
   </div>
 </div>
 
 <script>
-// All initialization runs after DOMContentLoaded to avoid binding to null elements
-document.addEventListener('DOMContentLoaded', function(){
+(function(){
   'use strict';
-  try{
-    const STORAGE_KEY = 'parlement_congo_v4';
-    const ADMIN_PIN = '1234';
+  const STORAGE_KEY = 'parlement_congo_v4';
+  const ADMIN_PIN = '1234'; // change this before production
 
-    // confetti setup
-    const canvas = document.getElementById('confetti');
-    const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
-    function resize(){ if(canvas){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; } }
-    window.addEventListener('resize', resize); resize();
-    let confetti = [], running = false;
-    function spawnConfetti(x,y){ if(!ctx) return; const colors=['#1c8a00','#f7d117','#d91f2a','#3b82f6','#a78bfa']; for(let i=0;i<30;i++){ confetti.push({x,y,vx:(Math.random()-0.5)*6, vy:(Math.random()*-7)-2, life:50+Math.random()*30, size:6+Math.random()*6, color: colors[Math.floor(Math.random()*colors.length)]}); } if(!running) runConfetti(); }
-    function runConfetti(){ if(!ctx) return; running = true; (function loop(){ ctx.clearRect(0,0,canvas.width,canvas.height); for(let i=confetti.length-1;i>=0;i--){ const p=confetti[i]; p.x+=p.vx; p.y+=p.vy; p.vy += 0.35; p.life--; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); if(p.life<=0||p.y>canvas.height+50) confetti.splice(i,1); } if(confetti.length>0) requestAnimationFrame(loop); else running=false; })(); }
-    function floatEmoji(x,y){ const emojis=['🎉','✨','🎈','👏','🥳']; for(let i=0;i<6;i++){ const el=document.createElement('div'); el.className='emoji'; el.textContent = emojis[Math.floor(Math.random()*emojis.length)]; document.body.appendChild(el); el.style.left = (x + (Math.random()*80-40)) + 'px'; el.style.top = (y + (Math.random()*40-10)) + 'px'; requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateY(-120px) scale(1.2)'; }); setTimeout(()=>el.remove(),1400); } }
+  // Canvas confetti
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize); resize();
 
-    // state helpers
-    function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
-    function splitLines(text){ return (''+(text||'')).split(/\r?\n/).map(l=>l.trim()).filter(Boolean); }
+  let confetti = [];
+  function spawnConfetti(x,y){ const colors=['#1c8a00','#f7d117','#d91f2a','#3b82f6','#a78bfa']; for(let i=0;i<40;i++){ confetti.push({x,y,vx:(Math.random()-0.5)*6, vy:(Math.random()*-8)-2, life:60+Math.random()*40, size:6+Math.random()*8, color: colors[Math.floor(Math.random()*colors.length)]}); } if(!running) runConfetti(); }
+  let running=false; function runConfetti(){ running=true; (function loop(){ ctx.clearRect(0,0,canvas.width,canvas.height); for(let i=confetti.length-1;i>=0;i--){ const p=confetti[i]; p.x+=p.vx; p.y+=p.vy; p.vy += 0.35; p.life--; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); if(p.life<=0||p.y>canvas.height+50) confetti.splice(i,1); } if(confetti.length>0) requestAnimationFrame(loop); else running=false; })(); }
 
-    function defaultState(){ return {
-      pres: [ {id:'p1', name:'Aminata', emoji:'', votes:0}, {id:'p2', name:'Jean', emoji:'', votes:0} ],
-      vice: [ {id:'v1', name:'Maya', emoji:'', votes:0}, {id:'v2', name:'Lucas', emoji:'', votes:0} ],
-      sec: [ {id:'s1', name:'Pierre', emoji:'', votes:0} ],
-      voters: [], voteRecords: [], total:0, last:null
-    }; }
+  function floatEmoji(x,y){ const emojis=['🎉','✨','🎈','👏','🥳']; for(let i=0;i<6;i++){ const el=document.createElement('div'); el.className='emoji'; el.textContent = emojis[Math.floor(Math.random()*emojis.length)]; document.body.appendChild(el); el.style.left = (x + (Math.random()*80-40)) + 'px'; el.style.top = (y + (Math.random()*40-10)) + 'px'; requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateY(-120px) scale(1.2)'; }); setTimeout(()=>el.remove(),1400); } }
 
-    function normalizeState(raw){ const d = raw && typeof raw === 'object' ? raw : {}; d.pres = Array.isArray(d.pres) ? d.pres : []; d.vice = Array.isArray(d.vice) ? d.vice : []; d.sec = Array.isArray(d.sec) ? d.sec : []; d.voters = Array.isArray(d.voters) ? d.voters : []; d.voteRecords = Array.isArray(d.voteRecords) ? d.voteRecords : []; d.total = typeof d.total === 'number' ? d.total : 0; d.last = d.last || null; const ensureCand = c => ({ id: c && c.id ? c.id : ('c_'+Math.random().toString(36).slice(2,9)), name: c && c.name ? c.name : '—', emoji: c && c.emoji ? c.emoji : '', role: c && c.role ? c.role : 'pres', votes: typeof (c && c.votes) === 'number' ? c.votes : 0 }); d.pres = d.pres.map(ensureCand); d.vice = d.vice.map(ensureCand); d.sec = d.sec.map(ensureCand); d.voters = d.voters.map(v=>({ id: v && v.id ? v.id : ('u_'+Math.random().toString(36).slice(2,9)), name: v && v.name ? v.name : '—', emoji: v && v.emoji ? v.emoji : '' })); d.voteRecords = d.voteRecords.map(r=>({ id: r && r.id ? r.id : ('vr_'+Math.random().toString(36).slice(2,9)), voterId: r && r.voterId ? r.voterId : null, voterName: r && r.voterName ? r.voterName : '', candidateId: r && r.candidateId ? r.candidateId : null, candidateName: r && r.candidateName ? r.candidateName : '', role: r && r.role ? r.role : '', ts: r && r.ts ? r.ts : null })); recomputeCountsForState(d); return d; }
+  // load/save
+  function load(){ try{ const s = localStorage.getItem(STORAGE_KEY); if(!s){ const initial = { pres:[{id:'p1',name:'Aminata',emoji:'',votes:0},{id:'p2',name:'Jean',emoji:'',votes:0}], vice:[{id:'v1',name:'Maya',emoji:'',votes:0},{id:'v2',name:'Lucas',emoji:'',votes:0}], sec:[{id:'s1',name:'Pierre',emoji:'',votes:0}], total:0,last:null }; localStorage.setItem(STORAGE_KEY, JSON.stringify(initial)); return initial; } return JSON.parse(s);}catch(e){ console.error(e); return {pres:[],vice:[],sec:[],total:0,last:null}; }}
+  function save(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-    function recomputeCountsForState(st){ (st.pres||[]).forEach(c=>c.votes=0); (st.vice||[]).forEach(c=>c.votes=0); (st.sec||[]).forEach(c=>c.votes=0); (st.voteRecords||[]).forEach(vr=>{ const cid = vr && vr.candidateId; if(!cid) return; const all = [].concat(st.pres||[], st.vice||[], st.sec||[]); const found = all.find(x=>x.id===cid); if(found) found.votes=(found.votes||0)+1; }); st.total = (st.pres||[]).reduce((s,c)=>s+(c.votes||0),0) + (st.vice||[]).reduce((s,c)=>s+(c.votes||0),0) + (st.sec||[]).reduce((s,c)=>s+(c.votes||0),0); }
+  let state = load();
 
-    function saveState(st){ try{ const normalized = normalizeState(st); localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized)); state = normalized; }catch(e){ console.error('saveState error',e); } }
-    function loadState(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw){ const d = defaultState(); saveState(d); return d; } const parsed = JSON.parse(raw); return normalizeState(parsed); }catch(e){ console.error('loadState error',e); const d = defaultState(); saveState(d); return d; } }
+  // DOM refs
+  const presList = document.getElementById('presList');
+  const vpList = document.getElementById('vpList');
+  const secList = document.getElementById('secList');
+  const totalEl = document.getElementById('total');
+  const lastEl = document.getElementById('last');
+  const btnAdmin = document.getElementById('btnAdmin');
+  const btnResults = document.getElementById('btnResults');
 
-    // DOM refs
-    const presList = document.getElementById('presList');
-    const vpList = document.getElementById('vpList');
-    const secList = document.getElementById('secList');
-    const totalEl = document.getElementById('total');
-    const lastEl = document.getElementById('last');
-    const btnAdmin = document.getElementById('btnAdmin');
-    const btnResults = document.getElementById('btnResults');
+  const pinModal = document.getElementById('pinModal');
+  const pinInput = document.getElementById('pinInput');
+  const pinOk = document.getElementById('pinOk');
+  const pinCancel = document.getElementById('pinCancel');
 
-    const openVoterPicker = document.getElementById('openVoterPicker');
-    const voterModal = document.getElementById('voterModal');
-    const voterListEl = document.getElementById('voterList');
-    const voterClose = document.getElementById('voterClose');
-    const selectedVoterEl = document.getElementById('selectedVoter');
+  const adminModal = document.getElementById('adminModal');
+  const adminName = document.getElementById('adminName');
+  const adminEmoji = document.getElementById('adminEmoji');
+  const adminRole = document.getElementById('adminRole');
+  const adminAdd = document.getElementById('adminAdd');
+  const adminClose = document.getElementById('adminClose');
+  const adminList = document.getElementById('adminList');
+  const adminReset = document.getElementById('adminReset');
+  const adminExport = document.getElementById('adminExport');
 
-    const pinModal = document.getElementById('pinModal');
-    const pinInput = document.getElementById('pinInput');
-    const pinOk = document.getElementById('pinOk');
-    const pinCancel = document.getElementById('pinCancel');
+  const resultsModal = document.getElementById('resultsModal');
+  const presResults = document.querySelector('#presResults tbody');
+  const vpResults = document.querySelector('#vpResults tbody');
+  const secResults = document.querySelector('#secResults tbody');
+  const winnerBanner = document.getElementById('winnerBanner');
+  const resultsClose = document.getElementById('resultsClose');
+  const resultsExport = document.getElementById('resultsExport');
+  const resultsReset = document.getElementById('resultsReset');
 
-    const adminModal = document.getElementById('adminModal');
-    const adminName = document.getElementById('adminName');
-    const adminEmoji = document.getElementById('adminEmoji');
-    const adminRole = document.getElementById('adminRole');
-    const adminAdd = document.getElementById('adminAdd');
-    const adminClose = document.getElementById('adminClose');
-    const adminList = document.getElementById('adminList');
-    const adminReset = document.getElementById('adminReset');
-    const adminExport = document.getElementById('adminExport');
-    const adminVoterName = document.getElementById('adminVoterName');
-    const adminVoterEmoji = document.getElementById('adminVoterEmoji');
-    const adminVoterAdd = document.getElementById('adminVoterAdd');
-    const adminVoterClose = document.getElementById('adminVoterClose');
-    const adminVoterList = document.getElementById('adminVoterList');
-    const bulkVoters = document.getElementById('bulkVoters');
-    const adminBulkAddVoters = document.getElementById('adminBulkAddVoters');
+  // utility
+  function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
+  function avatarDataUrl(){ // simple SVG avatar (Congo scarf)
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23fff'/><g transform='translate(0,42)'><path d='M0,40 L120,40 L120,70 L0,70 Z' fill='%23eee'/><polygon points='0,40 120,0 120,20 0,60' fill='%2308a200'/><polygon points='0,60 120,20 120,40 0,80' fill='%23f7d117'/><polygon points='0,80 120,40 120,60 0,100' fill='%23d91f2a'/></g><circle cx='60' cy='44' r='28' fill='%23f6d6b8'/><circle cx='50' cy='42' r='3' fill='%230b2b3a'/><circle cx='70' cy='42' r='3' fill='%230b2b3a'/><path d='M50,52 Q60,60 70,52' stroke='%230b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>`; return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg); }
 
-    const resultsModal = document.getElementById('resultsModal');
-    const presResults = document.querySelector('#presResults tbody');
-    const vpResults = document.querySelector('#vpResults tbody');
-    const secResults = document.querySelector('#secResults tbody');
-    const winnerBanner = document.getElementById('winnerBanner');
-    const resultsClose = document.getElementById('resultsClose');
-    const resultsExport = document.getElementById('resultsExport');
-    const resultsReset = document.getElementById('resultsReset');
+  // render candidate cards (counts hidden)
+  function makeCard(candidate, role){
+    const card = document.createElement('div'); card.className='card-candidate';
+    const avatar = document.createElement('div'); avatar.className='avatar';
+    if(candidate.emoji && candidate.emoji.trim()){ avatar.textContent = candidate.emoji; }
+    else { const img = document.createElement('img'); img.src = avatarDataUrl(); img.width = 84; img.height = 84; img.alt = 'avatar'; img.style.borderRadius='50%'; avatar.appendChild(img); }
+    const name = document.createElement('div'); name.className='cand-name'; name.textContent = candidate.name;
+    const btn = document.createElement('button'); btn.className='vote-btn'; btn.textContent='Voter';
+    const count = document.createElement('div'); count.className='count'; count.textContent = candidate.votes || 0; // hidden on main UI
 
-    // in-memory
-    let state = loadState();
-    let selectedVoter = null;
+    btn.addEventListener('click', function(){ // record vote
+      candidate.votes = (candidate.votes || 0) + 1;
+      state.total = (state.total || 0) + 1;
+      state.last = new Date().toLocaleString();
+      save(state);
+      totalEl.textContent = state.total;
+      lastEl.textContent = state.last;
+      // show celebration
+      const rect = btn.getBoundingClientRect(); const x = rect.left + rect.width/2; const y = rect.top + rect.height/2;
+      spawnConfetti(x,y); floatEmoji(x,y);
+    });
 
-    // avatar svg
-    function avatarDataUrl(){ const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23fff'/><g transform='translate(0,42)'><path d='M0,40 L120,40 L120,70 L0,70 Z' fill='%23eee'/><polygon points='0,40 120,0 120,20 0,60' fill='%2308a200'/><polygon points='0,60 120,20 120,40 0,80' fill='%23f7d117'/><polygon points='0,80 120,40 120,60 0,100' fill='%23d91f2a'/></g><circle cx='60' cy='44' r='28' fill='%23f6d6b8'/><circle cx='50' cy='42' r='3' fill='%230b2b3a'/><circle cx='70' cy='42' r='3' fill='%230b2b3a'/><path d='M50,52 Q60,60 70,52' stroke='%230b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>"; return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg); }
+    card.appendChild(avatar); card.appendChild(name); card.appendChild(btn); card.appendChild(count);
+    return card;
+  }
 
-    // build candidate card
-    function makeCard(candidate){ const card = document.createElement('div'); card.className='card-candidate'; const avatar = document.createElement('div'); avatar.className='avatar'; if(candidate.emoji && candidate.emoji.trim()){ avatar.textContent = candidate.emoji; } else { const img = document.createElement('img'); img.src = avatarDataUrl(); img.width = 84; img.height = 84; img.alt = 'avatar'; img.style.borderRadius='50%'; avatar.appendChild(img); } const name = document.createElement('div'); name.className='cand-name'; name.textContent = candidate.name || '—'; const btn = document.createElement('button'); btn.type='button'; btn.className='vote-btn'; btn.textContent='Voter'; const count = document.createElement('div'); count.className='count'; count.textContent = candidate.votes || 0;
-      btn.addEventListener('click', function(){ if(!selectedVoter){ alert('Veuillez d\'abord sélectionner votre nom (Sélectionner électeur).'); return; } state.voteRecords = Array.isArray(state.voteRecords) ? state.voteRecords : []; const role = candidate.role || 'pres'; const already = state.voteRecords.find(v => v.voterId === selectedVoter.id && v.role === role); if(already){ alert('Cet électeur a déjà voté pour ce rôle.'); return; } const rec = { id: uid('vr_'), voterId: selectedVoter.id, voterName: selectedVoter.name, candidateId: candidate.id, candidateName: candidate.name, role: role, ts: new Date().toISOString() }; state.voteRecords.push(rec); candidate.votes = (candidate.votes || 0) + 1; state.total = (state.total || 0) + 1; state.last = new Date().toLocaleString(); saveState(state); if(totalEl) totalEl.textContent = state.total; if(lastEl) lastEl.textContent = state.last; const rect = btn.getBoundingClientRect(); const x = rect.left + rect.width/2; const y = rect.top + rect.height/2; spawnConfetti(x,y); floatEmoji(x,y); renderAll(); }); card.appendChild(avatar); card.appendChild(name); card.appendChild(btn); card.appendChild(count); return card; }
+  function renderAll(){ presList.innerHTML=''; vpList.innerHTML=''; secList.innerHTML='';
+    (state.pres||[]).forEach(c=>presList.appendChild(makeCard(c,'pres')));
+    (state.vice||[]).forEach(c=>vpList.appendChild(makeCard(c,'vice')));
+    (state.sec||[]).forEach(c=>secList.appendChild(makeCard(c,'sec')));
+    totalEl.textContent = state.total || 0; lastEl.textContent = state.last || '—';
+  }
 
-    // render UI
-    function renderAll(){ state = normalizeState(state); if(presList) presList.innerHTML=''; if(vpList) vpList.innerHTML=''; if(secList) secList.innerHTML=''; (state.pres||[]).forEach(c=>{ if(presList) presList.appendChild(makeCard(c)); }); (state.vice||[]).forEach(c=>{ if(vpList) vpList.appendChild(makeCard(c)); }); (state.sec||[]).forEach(c=>{ if(secList) secList.appendChild(makeCard(c)); }); if(totalEl) totalEl.textContent = state.total || 0; if(lastEl) lastEl.textContent = state.last || '—'; renderSelectedVoter(); }
+  // show/hide modals
+  function showModal(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
+  function hideModal(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
 
-    // voters list
-    function renderVoterList(){ if(!voterListEl) return; voterListEl.innerHTML=''; const arr = Array.isArray(state.voters) ? state.voters : []; if(arr.length===0){ const p = document.createElement('div'); p.className='muted'; p.textContent='Aucun électeur trouvé. Ajoutez des électeurs via Admin.'; voterListEl.appendChild(p); return; } arr.forEach(v=>{ const it = document.createElement('div'); it.className='voter-item'; if(v.emoji) it.appendChild(document.createTextNode(v.emoji + ' ')); const s = document.createElement('strong'); s.textContent = v.name; it.appendChild(s); it.addEventListener('click', ()=>{ selectedVoter = v; renderSelectedVoter(); hideModal(voterModal); }); voterListEl.appendChild(it); }); }
+  // PIN flow with callback
+  let pinCallback = null;
+  function openPinFlow(callback){ pinCallback = callback; pinInput.value=''; showModal(pinModal); pinInput.focus(); }
 
-    function renderSelectedVoter(){ if(!selectedVoterEl) return; if(selectedVoter) selectedVoterEl.textContent = (selectedVoter.emoji?selectedVoter.emoji+' ':'') + selectedVoter.name; else selectedVoterEl.textContent = 'Aucun électeur sélectionné'; }
+  pinOk.addEventListener('click', function(){ const v = pinInput.value.trim(); if(v === ADMIN_PIN){ hideModal(pinModal); if(typeof pinCallback === 'function') pinCallback(); pinCallback = null; } else { alert('PIN invalide'); } });
+  pinCancel.addEventListener('click', function(){ hideModal(pinModal); pinCallback = null; });
 
-    // modal helpers
-    function showModal(el){ if(!el) return; el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
-    function hideModal(el){ if(!el) return; el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
+  // Admin actions
+  btnAdmin.addEventListener('click', function(){ openPinFlow(function(){ showModal(adminModal); renderAdminList(); }); });
 
-    // PIN flow
-    let pinCallback = null;
-    function openPinFlow(cb){ pinCallback = cb; if(pinInput) pinInput.value=''; showModal(pinModal); if(pinInput) pinInput.focus(); }
-    if(pinOk) pinOk.addEventListener('click', function(){ const v = pinInput && pinInput.value ? pinInput.value.trim() : ''; if(v === ADMIN_PIN){ hideModal(pinModal); if(typeof pinCallback === 'function') pinCallback(); pinCallback = null; } else { alert('PIN invalide'); } });
-    if(pinCancel) pinCancel.addEventListener('click', function(){ hideModal(pinModal); pinCallback = null; });
+  function renderAdminList(){ adminList.innerHTML=''; function section(title, arr, role){ const h=document.createElement('div'); h.style.fontWeight='700'; h.style.marginTop='6px'; h.textContent = title; adminList.appendChild(h); (arr||[]).forEach(c=>{ const row=document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='6px 0'; row.innerHTML = `<div>${c.emoji?c.emoji+' ':''}<strong>${c.name}</strong> <span style='color:#6b7280'>(votes: ${c.votes||0})</span></div>`; const del=document.createElement('button'); del.className='btn ghost'; del.textContent='Supprimer'; del.addEventListener('click', function(){ if(confirm('Supprimer ce candidat ?')){ if(role==='pres') state.pres = state.pres.filter(x=>x.id!==c.id); else if(role==='vice') state.vice = state.vice.filter(x=>x.id!==c.id); else state.sec = state.sec.filter(x=>x.id!==c.id); save(state); renderAll(); renderAdminList(); } }); row.appendChild(del); adminList.appendChild(row); }); }
+    section('Président', state.pres, 'pres'); section('Vice-Président', state.vice, 'vice'); section('Secrétaire Général', state.sec, 'sec');
+  }
 
-    // admin open
-    if(btnAdmin) btnAdmin.addEventListener('click', function(){ openPinFlow(function(){ showModal(adminModal); renderAdminList(); }); });
+  adminAdd.addEventListener('click', function(){ const name = adminName.value.trim(); const emoji = adminEmoji.value.trim(); const role = adminRole.value; if(!name){ alert('Entrez le nom du candidat'); return; } const id = uid(role==='pres'?'p':role==='vice'?'v':'s'); const entry = { id, name, emoji, votes: 0 }; if(role==='pres'){ state.pres.push(entry);} else if(role==='vice'){ state.vice.push(entry); } else { state.sec.push(entry); } save(state); adminName.value=''; adminEmoji.value=''; renderAll(); renderAdminList(); });
 
-    // admin list render (safe DOM creation)
-    function renderAdminList(){ if(!adminList || !adminVoterList) return; adminList.innerHTML = ''; adminVoterList.innerHTML = ''; function section(title, arr, role){ const h = document.createElement('div'); h.style.fontWeight='700'; h.style.marginTop='6px'; h.textContent = title; adminList.appendChild(h); (arr||[]).forEach(c=>{ const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='6px 0'; const left = document.createElement('div'); if(c.emoji) left.appendChild(document.createTextNode(c.emoji + ' ')); const strong = document.createElement('strong'); strong.textContent = c.name; left.appendChild(strong); const small = document.createElement('span'); small.style.color = '#6b7280'; small.textContent = ' (votes: ' + (c.votes||0) + ')'; left.appendChild(small); row.appendChild(left); const del = document.createElement('button'); del.type='button'; del.className='btn ghost'; del.textContent='Supprimer'; del.addEventListener('click', function(){ if(confirm('Supprimer ce candidat ?')){ if(role==='pres') state.pres = (state.pres||[]).filter(x=>x.id!==c.id); else if(role==='vice') state.vice = (state.vice||[]).filter(x=>x.id!==c.id); else state.sec = (state.sec||[]).filter(x=>x.id!==c.id); state.voteRecords = (state.voteRecords||[]).filter(vr=> vr.candidateId !== c.id); recomputeCountsForState(state); saveState(state); renderAll(); renderAdminList(); } }); row.appendChild(del); adminList.appendChild(row); }); }
-      section('Président', state.pres || [], 'pres'); section('Vice-Président', state.vice || [], 'vice'); section('Secrétaire Général', state.sec || [], 'sec');
-      const hv = document.createElement('div'); hv.style.fontWeight='700'; hv.style.marginTop='8px'; hv.textContent='Électeurs'; adminVoterList.appendChild(hv);
-      (state.voters||[]).forEach(v=>{ const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='6px 0'; const left = document.createElement('div'); if(v.emoji) left.appendChild(document.createTextNode(v.emoji + ' ')); const strong = document.createElement('strong'); strong.textContent = v.name; left.appendChild(strong); row.appendChild(left); const del = document.createElement('button'); del.type='button'; del.className='btn ghost'; del.textContent='Supprimer'; del.addEventListener('click', function(){ if(confirm('Supprimer cet électeur ?')){ state.voters = (state.voters||[]).filter(x=>x.id!==v.id); state.voteRecords = (state.voteRecords||[]).filter(vr=> vr.voterId !== v.id); recomputeCountsForState(state); saveState(state); renderAll(); renderAdminList(); } }); row.appendChild(del); adminVoterList.appendChild(row); }); }
+  adminClose.addEventListener('click', function(){ hideModal(adminModal); });
+  adminReset.addEventListener('click', function(){ if(confirm('Remettre tous les compteurs à zéro ?')){ (state.pres||[]).forEach(x=>x.votes=0); (state.vice||[]).forEach(x=>x.votes=0); (state.sec||[]).forEach(x=>x.votes=0); state.total = 0; state.last = null; save(state); renderAll(); renderAdminList(); alert('Réinitialisé'); } });
+  adminExport.addEventListener('click', exportState);
 
-    // admin add candidate
-    if(adminAdd) adminAdd.addEventListener('click', function(){ const name = adminName && adminName.value ? adminName.value.trim() : ''; const emoji = adminEmoji && adminEmoji.value ? adminEmoji.value.trim() : ''; const role = adminRole && adminRole.value ? adminRole.value : 'pres'; if(!name){ alert('Entrez le nom du candidat'); return; } const id = uid(role==='pres'?'p':role==='vice'?'v':'s'); const entry = { id, name, emoji, role, votes: 0 }; if(role==='pres'){ state.pres = state.pres || []; state.pres.push(entry);} else if(role==='vice'){ state.vice = state.vice || []; state.vice.push(entry); } else { state.sec = state.sec || []; state.sec.push(entry); } saveState(state); if(adminName) adminName.value=''; if(adminEmoji) adminEmoji.value=''; renderAll(); renderAdminList(); });
+  // Results flow
+  btnResults.addEventListener('click', function(){ openPinFlow(function(){ openResultsModal(); }); });
 
-    // admin add voter (individual)
-    if(adminVoterAdd) adminVoterAdd.addEventListener('click', function(){ const name = adminVoterName && adminVoterName.value ? adminVoterName.value.trim() : ''; const emoji = adminVoterEmoji && adminVoterEmoji.value ? adminVoterEmoji.value.trim() : ''; if(!name){ alert('Entrez le nom de l\'électeur'); return; } const id = uid('u'); const entry = { id, name, emoji }; state.voters = state.voters || []; state.voters.push(entry); saveState(state); if(adminVoterName) adminVoterName.value=''; if(adminVoterEmoji) adminVoterEmoji.value=''; renderAdminList(); });
+  function openResultsModal(){ // populate tables
+    presResults.innerHTML=''; vpResults.innerHTML=''; secResults.innerHTML='';
+    (state.pres||[]).forEach(c=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${c.name}</td><td>${c.votes||0}</td>`; presResults.appendChild(tr); });
+    (state.vice||[]).forEach(c=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${c.name}</td><td>${c.votes||0}</td>`; vpResults.appendChild(tr); });
+    (state.sec||[]).forEach(c=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${c.name}</td><td>${c.votes||0}</td>`; secResults.appendChild(tr); });
 
-    // admin bulk add voters (admin modal only)
-    if(adminBulkAddVoters) adminBulkAddVoters.addEventListener('click', function(){ if(!bulkVoters) return; const text = bulkVoters.value || ''; const lines = splitLines(text); if(lines.length === 0){ alert('Collez au moins un nom d\'électeur (une ligne = un nom)'); return; } let added = 0; lines.forEach(line=>{ const parts = line.split(/[,|]/).map(p=>p.trim()).filter(Boolean); const name = parts[0]; const emoji = parts[1] || ''; if(name){ const id = uid('u'); const entry = { id, name, emoji }; state.voters = state.voters || []; state.voters.push(entry); added++; } }); if(added>0){ saveState(state); renderAdminList(); bulkVoters.value=''; alert(added + ' électeur(s) ajouté(s).'); } else { alert('Aucun électeur valide trouvé.'); } });
+    // winners
+    function getWinner(arr){ if(!arr||arr.length===0) return {names:[],max:0}; let max=-1; let winners=[]; arr.forEach(a=>{ const v = a.votes||0; if(v>max){ max=v; winners=[a.name]; } else if(v===max){ winners.push(a.name); } }); return {names:winners,max}; }
+    const wp = getWinner(state.pres), wv = getWinner(state.vice), ws = getWinner(state.sec);
+    let text = '';
+    if(wp.names.length) text += `<strong>Président:</strong> ${wp.names.join(', ')} (${wp.max} voix)`;
+    if(wv.names.length) text += ` &nbsp; • &nbsp; <strong>Vice-Président:</strong> ${wv.names.join(', ')} (${wv.max} voix)`;
+    if(ws.names.length) text += ` &nbsp; • &nbsp; <strong>Secrétaire G.:</strong> ${ws.names.join(', ')} (${ws.max} voix)`;
+    winnerBanner.innerHTML = text; winnerBanner.style.display = text ? 'block' : 'none';
 
-    if(adminVoterClose) adminVoterClose.addEventListener('click', function(){ hideModal(adminModal); });
-    if(adminClose) adminClose.addEventListener('click', function(){ hideModal(adminModal); });
+    showModal(resultsModal);
+  }
 
-    if(adminReset) adminReset.addEventListener('click', function(){ if(confirm('Remettre tous les compteurs à zéro ?')){ (state.pres||[]).forEach(x=>x.votes=0); (state.vice||[]).forEach(x=>x.votes=0); (state.sec||[]).forEach(x=>x.votes=0); state.voteRecords = []; state.total = 0; state.last = null; saveState(state); renderAll(); renderAdminList(); alert('Réinitialisé'); } });
-    if(adminExport) adminExport.addEventListener('click', function(){ try{ const data = JSON.stringify(state,null,2); const blob = new Blob([data],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'votes_parlement_with_voters.json'; a.click(); URL.revokeObjectURL(url); }catch(e){ console.error('exportState error', e); alert('Erreur export'); } });
+  resultsClose.addEventListener('click', function(){ hideModal(resultsModal); });
+  resultsExport.addEventListener('click', exportState);
+  resultsReset.addEventListener('click', function(){ if(confirm('Remettre tous les compteurs à zéro ?')){ (state.pres||[]).forEach(x=>x.votes=0); (state.vice||[]).forEach(x=>x.votes=0); (state.sec||[]).forEach(x=>x.votes=0); state.total = 0; state.last = null; save(state); renderAll(); hideModal(resultsModal); alert('Réinitialisé'); } });
 
-    // voter picker wiring
-    if(openVoterPicker) openVoterPicker.addEventListener('click', function(){ showModal(voterModal); renderVoterList(); });
-    if(voterClose) voterClose.addEventListener('click', function(){ hideModal(voterModal); });
+  function exportState(){ const data = JSON.stringify(state,null,2); const blob = new Blob([data],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'votes_parlement.json'; a.click(); URL.revokeObjectURL(url); }
 
-    // Results flow
-    if(btnResults) btnResults.addEventListener('click', function(){ openPinFlow(function(){ openResultsModal(); }); });
+  // helpers
+  function save(st){ saveState(st||state); }
+  function saveState(st){ localStorage.setItem(STORAGE_KEY, JSON.stringify(st)); state = st || state; }
 
-    function openResultsModal(){ if(!presResults || !vpResults || !secResults) return; presResults.innerHTML=''; vpResults.innerHTML=''; secResults.innerHTML=''; const map = {}; (state.voteRecords||[]).forEach(vr => { if(!vr || !vr.candidateId) return; if(!map[vr.candidateId]) map[vr.candidateId]=[]; map[vr.candidateId].push(vr.voterName || '—'); }); (state.pres||[]).forEach(c=>{ const tr = document.createElement('tr'); const td1 = document.createElement('td'); td1.textContent = c.name; const td2 = document.createElement('td'); td2.textContent = c.votes || 0; const td3 = document.createElement('td'); td3.textContent = (map[c.id]||[]).join(', '); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); presResults.appendChild(tr); }); (state.vice||[]).forEach(c=>{ const tr = document.createElement('tr'); const td1 = document.createElement('td'); td1.textContent = c.name; const td2 = document.createElement('td'); td2.textContent = c.votes || 0; const td3 = document.createElement('td'); td3.textContent = (map[c.id]||[]).join(', '); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); vpResults.appendChild(tr); }); (state.sec||[]).forEach(c=>{ const tr = document.createElement('tr'); const td1 = document.createElement('td'); td1.textContent = c.name; const td2 = document.createElement('td'); td2.textContent = c.votes || 0; const td3 = document.createElement('td'); td3.textContent = (map[c.id]||[]).join(', '); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); secResults.appendChild(tr); }); const getWinner = arr=>{ if(!arr||!arr.length) return {names:[],max:0}; let max=-1; let winners=[]; arr.forEach(a=>{ const v = a.votes||0; if(v>max){ max=v; winners=[a.name]; } else if(v===max){ winners.push(a.name); } }); return {names:winners,max}; }; const wp = getWinner(state.pres), wv = getWinner(state.vice), ws = getWinner(state.sec); let text = ''; if(wp.names.length) text += 'Président: ' + wp.names.join(', ') + ' (' + wp.max + ' voix)'; if(wv.names.length) text += ' • Vice-Président: ' + wv.names.join(', ') + ' (' + wv.max + ' voix)'; if(ws.names.length) text += ' • Secrétaire G.: ' + ws.names.join(', ') + ' (' + ws.max + ' voix)'; if(winnerBanner){ winnerBanner.textContent = text; winnerBanner.style.display = text ? 'block' : 'none'; } showModal(resultsModal); }
+  function spawnConfetti(x,y){ // small wrapper uses earlier defined confetti array
+    const colors=['#1c8a00','#f7d117','#d91f2a','#3b82f6','#a78bfa']; for(let i=0;i<30;i++){ confetti.push({x,y,vx:(Math.random()-0.5)*6, vy:(Math.random()*-7)-2, life:50+Math.random()*30, size:6+Math.random()*6, color: colors[Math.floor(Math.random()*colors.length)]}); }
+    if(!running) runConfetti(); }
 
-    if(resultsClose) resultsClose.addEventListener('click', function(){ hideModal(resultsModal); });
-    if(resultsExport) resultsExport.addEventListener('click', function(){ try{ const data = JSON.stringify(state,null,2); const blob = new Blob([data],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'votes_parlement_with_voters.json'; a.click(); URL.revokeObjectURL(url); }catch(e){ console.error('exportState error', e); alert('Erreur export'); } });
-    if(resultsReset) resultsReset.addEventListener('click', function(){ if(confirm('Remettre tous les compteurs à zéro ?')){ (state.pres||[]).forEach(x=>x.votes=0); (state.vice||[]).forEach(x=>x.votes=0); (state.sec||[]).forEach(x=>x.votes=0); state.voteRecords = []; state.total = 0; state.last = null; saveState(state); renderAll(); hideModal(resultsModal); alert('Réinitialisé'); } });
+  function floatEmoji(x,y){ const emojis=['🎉','✨','🎈','👏','🥳']; for(let i=0;i<6;i++){ const el = document.createElement('div'); el.className='emoji'; el.textContent = emojis[Math.floor(Math.random()*emojis.length)]; document.body.appendChild(el); el.style.left = (x + (Math.random()*80-40)) + 'px'; el.style.top = (y + (Math.random()*40-10)) + 'px'; requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateY(-120px) scale(1.2)'; }); setTimeout(()=>el.remove(),1400); } }
 
-    // expose for debugging
-    window.__parlement_state = state;
-
-    // final render
-    renderAll();
-
-    // log bindings
-    const bindings = ['btnAdmin','btnResults','openVoterPicker','adminAdd','adminVoterAdd','adminBulkAddVoters','adminReset','resultsExport'];
-    bindings.forEach(id=>{ const el = document.getElementById(id); console.debug('binding:', id, !!el); });
-
-  }catch(err){ console.error('initialization error',err); alert('Erreur initialisation: '+(err&&err.message?err.message:err)); }
-});
+  // start
+  renderAll();
+})();
 </script>
 </body>
 </html>
