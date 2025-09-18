@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Parlement des Enfants — Admin</title>
+<style>
+  :root{--bg:#f4fbff;--card:#fff;--accent:#0277bd;--muted:#55607a}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#e9f7ff);color:#082033;display:flex;align-items:flex-start;justify-content:center;padding:18px}
+  .container{width:100%;max-width:1100px}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#066fb2,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
+  h1{margin:0;font-size:20px}
+  .subtitle{color:var(--muted);font-size:13px}
+  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(6,20,40,0.06)}
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:14px}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+  label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
+  input[type=text], select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #eef7ff;margin-top:6px}
+  textarea{min-height:90px;resize:vertical}
+  .btn{padding:9px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.ghost{background:transparent;border:2px solid #e6f7ff}
+  .list{margin-top:8px}
+  .item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f1f5f9}
+  .small{font-size:13px;color:var(--muted)}
+  .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;z-index:50}
+  .modal-card{width:100%;max-width:520px;background:var(--card);padding:14px;border-radius:12px;box-shadow:0 12px 36px rgba(8,24,44,0.08)}
+  .pin-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.45);z-index:9999}
+  .pin-box{background:#fff;padding:20px;border-radius:12px;min-width:320px;text-align:center}
+  .muted{color:var(--muted)}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+  .stat{background:#f8fbff;padding:10px;border-radius:8px;border:1px solid #eaf7ff}
+  .results-table{width:100%;border-collapse:collapse;margin-top:8px}
+  .results-table th,.results-table td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">PE</div>
+    <div>
+      <h1>Admin — Parlement des Enfants</h1>
+      <div class="subtitle">Gérer candidats, électeurs et résultats (Firestore)</div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Ajouter un candidat</h3>
+      <label>Nom</label>
+      <input id="candName" type="text" placeholder="Ex: Aminata" />
+      <label>Emoji (optionnel)</label>
+      <input id="candEmoji" type="text" placeholder="Ex: 🧑‍🎓" />
+      <label>Rôle</label>
+      <select id="candRole">
+        <option value="pres">Président</option>
+        <option value="vice">Vice-Président</option>
+        <option value="sec">Secrétaire Général</option>
+        <option value="rapporteur">Rapporteur</option>
+        <option value="secretaire">Secrétaire chargé.e de la Citoyenneté</option>
+      </select>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button id="addCandidate" class="btn primary">Ajouter candidat</button>
+      </div>
+
+      <hr />
+
+      <h3>Ajouter un électeur</h3>
+      <label>Nom</label>
+      <input id="voterName" type="text" placeholder="Ex: Koffi" />
+      <label>Emoji (optionnel)</label>
+      <input id="voterEmoji" type="text" placeholder="Ex: 😀" />
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button id="addVoter" class="btn primary">Ajouter électeur</button>
+      </div>
+
+      <hr />
+
+      <h3>Ajouter plusieurs électeurs (une ligne = un nom)</h3>
+      <textarea id="bulkVoters" placeholder="Koffi\nAmina\n..."></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="bulkAddVoters" class="btn ghost">Ajouter en masse</button>
+      </div>
+
+      <hr />
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button id="resetVotes" class="btn ghost">Réinitialiser votes</button>
+        <button id="exportJson" class="btn ghost">Exporter JSON</button>
+      </div>
+
+      <div class="small" style="margin-top:10px">Actions protégées par PIN (cette page te demande le PIN au chargement).</div>
+    </div>
+
+    <aside class="card">
+      <h3>Tableau de bord</h3>
+      <div class="stats">
+        <div class="stat"><strong id="statCandidates">0</strong><div class="small">Candidats</div></div>
+        <div class="stat"><strong id="statVoters">0</strong><div class="small">Électeurs</div></div>
+        <div class="stat"><strong id="statVotes">0</strong><div class="small">Votes</div></div>
+      </div>
+
+      <h4 style="margin-top:12px">Liste candidats</h4>
+      <div id="candidatesList" class="list"></div>
+
+      <h4 style="margin-top:12px">Liste électeurs</h4>
+      <div id="votersList" class="list"></div>
+
+      <h4 style="margin-top:12px">Résultats (en direct)</h4>
+      <table class="results-table" id="resultsTable">
+        <thead><tr><th>Candidat</th><th>Rôle</th><th>Voix</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </aside>
+  </div>
+</div>
+
+<!-- PIN overlay shown until admin authenticates -->
+<div id="pinOverlay" class="pin-overlay">
+  <div class="pin-box">
+    <h3>Code administrateur requis</h3>
+    <input id="pinInput" type="password" placeholder="Entrer le code admin" style="padding:8px;border-radius:8px;border:1px solid #eee;width:100%;box-sizing:border-box;margin-top:10px" />
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+      <button id="pinCancel" class="btn ghost">Fermer</button>
+      <button id="pinSubmit" class="btn primary">Valider</button>
+    </div>
+    <div class="small" style="margin-top:8px">Par défaut le PIN est <code>1234</code> — change-le dans le code avant déploiement.</div>
+  </div>
+</div>
+
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  'use strict';
+
+  // === CONFIGURE FIREBASE (remplace par ta config) ===
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_cdwwXT6DRcEm-555RxXETZ0Pwnv0bcQ",
+    authDomain: "parlementvotesystemv1.firebaseapp.com",
+    projectId: "parlementvotesystemv1",
+    storageBucket: "parlementvotesystemv1.firebasestorage.app",
+    messagingSenderId: "1014390957615",
+    appId: "1:1014390957615:web:2ced35e18d4236451488da",
+    measurementId: "G-J8VSKCE3M8"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const FieldValue = firebase.firestore.FieldValue;
+
+  // Admin PIN (change before production)
+  const ADMIN_PIN = '1234';
+
+  // DOM refs
+  const pinOverlay = document.getElementById('pinOverlay');
+  const pinInput = document.getElementById('pinInput');
+  const pinSubmit = document.getElementById('pinSubmit');
+  const pinCancel = document.getElementById('pinCancel');
+
+  const candName = document.getElementById('candName');
+  const candEmoji = document.getElementById('candEmoji');
+  const candRole = document.getElementById('candRole');
+  const addCandidate = document.getElementById('addCandidate');
+
+  const voterName = document.getElementById('voterName');
+  const voterEmoji = document.getElementById('voterEmoji');
+  const addVoter = document.getElementById('addVoter');
+
+  const bulkVoters = document.getElementById('bulkVoters');
+  const bulkAddVoters = document.getElementById('bulkAddVoters');
+
+  const resetVotes = document.getElementById('resetVotes');
+  const exportJson = document.getElementById('exportJson');
+
+  const statCandidates = document.getElementById('statCandidates');
+  const statVoters = document.getElementById('statVoters');
+  const statVotes = document.getElementById('statVotes');
+
+  const candidatesList = document.getElementById('candidatesList');
+  const votersList = document.getElementById('votersList');
+  const resultsTableBody = document.querySelector('#resultsTable tbody');
+
+  // helper
+  function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
+  function splitLines(text){ return (''+(text||'')).split(/\r?\n/).map(l=>l.trim()).filter(Boolean); }
+
+  // show/hide pin overlay
+  function unlockAdmin(){
+    pinOverlay.style.display = 'none';
+    startRealtimeListeners();
+  }
+  function lockAdmin(){
+    pinOverlay.style.display = 'flex';
+  }
+
+  pinCancel.addEventListener('click', function(){ alert('Accès admin annulé'); });
+  pinSubmit.addEventListener('click', function(){
+    const val = (pinInput && pinInput.value||'').trim();
+    if(val === ADMIN_PIN){ unlockAdmin(); }
+    else { alert('PIN invalide'); }
+  });
+
+  // === CRUD operations ===
+  async function addCandidateToFirestore(name, emoji, role){
+    const doc = {
+      name: name,
+      emoji: emoji || '',
+      role: role || 'pres',
+      votes: 0,
+      createdAt: new Date().toISOString()
+    };
+    await db.collection('candidates').add(doc);
+  }
+
+  async function addVoterToFirestore(name, emoji){
+    const doc = {
+      name: name,
+      emoji: emoji || '',
+      createdAt: new Date().toISOString()
+    };
+    await db.collection('voters').add(doc);
+  }
+
+  // add candidate button
+  addCandidate.addEventListener('click', async function(){
+    const name = (candName.value||'').trim();
+    if(!name){ alert('Entrez le nom du candidat'); return; }
+    const emoji = (candEmoji.value||'').trim();
+    const role = (candRole.value||'pres').trim();
+    try{
+      await addCandidateToFirestore(name, emoji, role);
+      candName.value = ''; candEmoji.value = '';
+      alert('Candidat ajouté');
+    }catch(e){ console.error(e); alert('Erreur ajout candidat: '+(e.message||e)); }
+  });
+
+  // add voter
+  addVoter.addEventListener('click', async function(){
+    const name = (voterName.value||'').trim();
+    if(!name){ alert('Entrez le nom de l\\"électeur'); return; }
+    const emoji = (voterEmoji.value||'').trim();
+    try{
+      await addVoterToFirestore(name, emoji);
+      voterName.value=''; voterEmoji.value='';
+      alert('Électeur ajouté');
+    }catch(e){ console.error(e); alert('Erreur ajout électeur'); }
+  });
+
+  // bulk add voters
+  bulkAddVoters.addEventListener('click', async function(){
+    const text = (bulkVoters.value||'').trim();
+    const names = splitLines(text);
+    if(names.length === 0){ alert('Collez au moins un nom (une ligne = un nom)'); return; }
+    let added = 0;
+    const batch = db.batch();
+    try{
+      names.forEach(n => {
+        const ref = db.collection('voters').doc();
+        batch.set(ref, { name: n, emoji: '', createdAt: new Date().toISOString() });
+        added++;
+      });
+      await batch.commit();
+      bulkVoters.value='';
+      alert(added + ' électeur(s) ajouté(s).');
+    }catch(e){ console.error(e); alert('Erreur ajout en masse'); }
+  });
+
+  // export JSON (all collections: candidates, voters, votes)
+  exportJson.addEventListener('click', async function(){
+    try{
+      const out = { candidates:[], voters:[], votes:[] };
+      const [candsSnap, votersSnap, votesSnap] = await Promise.all([
+        db.collection('candidates').get(),
+        db.collection('voters').get(),
+        db.collection('votes').get()
+      ]);
+      candsSnap.forEach(d=> out.candidates.push(Object.assign({ id: d.id }, d.data())));
+      votersSnap.forEach(d=> out.voters.push(Object.assign({ id: d.id }, d.data())));
+      votesSnap.forEach(d=> out.votes.push(Object.assign({ id: d.id }, d.data())));
+      const blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'parlement_export.json'; a.click(); URL.revokeObjectURL(url);
+    }catch(e){ console.error(e); alert('Erreur export JSON'); }
+  });
+
+  // reset votes: delete votes collection (batched) and set candidate.votes = 0
+  resetVotes.addEventListener('click', async function(){
+    if(!confirm('Remettre tous les compteurs à zéro ?')) return;
+    try{
+      // delete votes in batches of 500
+      const delBatch = async () => {
+        const snap = await db.collection('votes').limit(300).get();
+        if(snap.empty) return;
+        const batch = db.batch();
+        snap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        // recursive until empty
+        await delBatch();
+      };
+      await delBatch();
+      // reset candidates votes
+      const cands = await db.collection('candidates').get();
+      const batch2 = db.batch();
+      cands.forEach(d => { batch2.update(d.ref, { votes: 0 }); });
+      await batch2.commit();
+      alert('Réinitialisé');
+    }catch(e){ console.error(e); alert('Erreur réinitialisation: '+(e.message||e)); }
+  });
+
+  // delete candidate + related votes
+  async function deleteCandidate(cid){
+    if(!confirm('Supprimer ce candidat et ses votes ?')) return;
+    try{
+      // delete votes by candidate in batches
+      const delByCandidate = async () => {
+        const snap = await db.collection('votes').where('candidateId','==', cid).limit(300).get();
+        if(snap.empty) return;
+        const batch = db.batch();
+        snap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        await delByCandidate();
+      };
+      await delByCandidate();
+      // delete candidate doc
+      await db.collection('candidates').doc(cid).delete();
+      alert('Candidat supprimé');
+    }catch(e){ console.error(e); alert('Erreur suppression candidat'); }
+  }
+
+  // delete voter + related votes
+  async function deleteVoter(vid){
+    if(!confirm('Supprimer cet électeur et ses votes ?')) return;
+    try{
+      const delByVoter = async () => {
+        const snap = await db.collection('votes').where('voterId','==', vid).limit(300).get();
+        if(snap.empty) return;
+        const batch = db.batch();
+        snap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        await delByVoter();
+      };
+      await delByVoter();
+      await db.collection('voters').doc(vid).delete();
+      alert('Électeur supprimé');
+    }catch(e){ console.error(e); alert('Erreur suppression électeur'); }
+  }
+
+  // === realtime listeners for admin UI ===
+  let unsubCandidates = null, unsubVoters = null, unsubVotes = null;
+  function startRealtimeListeners(){
+    // unsubscribe previous if needed
+    if(unsubCandidates) unsubCandidates();
+    if(unsubVoters) unsubVoters();
+    if(unsubVotes) unsubVotes();
+
+    unsubCandidates = db.collection('candidates').onSnapshot(snap => {
+      // update candidate list and results table
+      candidatesList.innerHTML = '';
+      resultsTableBody.innerHTML = '';
+      const cands = [];
+      snap.forEach(d => {
+        const data = Object.assign({ id: d.id }, d.data());
+        cands.push(data);
+        // list item
+        const it = document.createElement('div'); it.className = 'item';
+        const left = document.createElement('div'); left.innerHTML = (data.emoji ? (data.emoji + ' ') : '') + '<strong>' + (data.name||'—') + '</strong> <div class="small">'+ (data.role||'') + '</div>';
+        const right = document.createElement('div');
+        const del = document.createElement('button'); del.className='btn ghost'; del.textContent='Supprimer';
+        del.addEventListener('click', ()=> deleteCandidate(data.id));
+        right.appendChild(del);
+        it.appendChild(left); it.appendChild(right);
+        candidatesList.appendChild(it);
+
+        // results row
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td'); td1.textContent = data.name || '—';
+        const td2 = document.createElement('td'); td2.textContent = data.role || '';
+        const td3 = document.createElement('td'); td3.textContent = data.votes || 0;
+        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+        resultsTableBody.appendChild(tr);
+      });
+      statCandidates.textContent = snap.size;
+    });
+
+    unsubVoters = db.collection('voters').onSnapshot(snap => {
+      votersList.innerHTML = '';
+      snap.forEach(d => {
+        const v = Object.assign({ id: d.id }, d.data());
+        const it = document.createElement('div'); it.className='item';
+        const left = document.createElement('div'); left.innerHTML = (v.emoji ? (v.emoji + ' ') : '') + '<strong>' + (v.name||'—') + '</strong>';
+        const right = document.createElement('div');
+        const del = document.createElement('button'); del.className='btn ghost'; del.textContent='Supprimer';
+        del.addEventListener('click', ()=> deleteVoter(v.id));
+        right.appendChild(del);
+        it.appendChild(left); it.appendChild(right);
+        votersList.appendChild(it);
+      });
+      statVoters.textContent = snap.size;
+    });
+
+    unsubVotes = db.collection('votes').onSnapshot(snap => {
+      statVotes.textContent = snap.size;
+      // we don't render votes list here, admin can export JSON to get details
+    });
+  }
+
+  // on page load, pin overlay visible; call lockAdmin to ensure it's shown
+  lockAdmin();
+
+  // debug expose (optional)
+  window.__admin_db = db;
+
+}); // DOMContentLoaded
+</script>
+</body>
+</html>
