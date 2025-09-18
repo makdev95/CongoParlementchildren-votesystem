@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Parlement des Enfants — Admin</title>
+<title>Parlement des Enfants — Admin (Podium & Dropdown per role)</title>
 <style>
   :root{--bg:#f4fbff;--card:#fff;--accent:#0277bd;--muted:#55607a}
   *{box-sizing:border-box}
   body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#e9f7ff);color:#082033;display:flex;align-items:flex-start;justify-content:center;padding:18px}
-  .container{width:100%;max-width:1100px}
+  .container{width:100%;max-width:1200px}
   header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
   .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#066fb2,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
   h1{margin:0;font-size:20px}
@@ -17,7 +17,8 @@
   .grid{display:grid;grid-template-columns:1fr 420px;gap:14px}
   @media(max-width:980px){.grid{grid-template-columns:1fr}}
   label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
-  input[type=text], select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #eef7ff;margin-top:6px}
+  input[type=text], input[type=password], select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #eef7ff;margin-top:6px}
+  input[type=file]{margin-top:6px}
   textarea{min-height:90px;resize:vertical}
   .btn{padding:9px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
   .btn.primary{background:var(--accent);color:#fff}
@@ -34,6 +35,21 @@
   .stat{background:#f8fbff;padding:10px;border-radius:8px;border:1px solid #eaf7ff}
   .results-table{width:100%;border-collapse:collapse;margin-top:8px}
   .results-table th,.results-table td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left}
+
+  /* podium */
+  .podium-wrap{margin-top:12px;padding:12px;border-radius:12px;background:linear-gradient(180deg,#fff,#f7fffb);box-shadow:0 8px 20px rgba(6,20,40,0.04)}
+  .role-block{margin-top:12px}
+  .podium{display:flex;align-items:flex-end;justify-content:center;gap:14px;padding-top:12px}
+  .pod{width:140px;text-align:center;border-radius:10px;padding:8px}
+  .pod .avatar{width:84px;height:84px;border-radius:50%;margin:0 auto 6px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .pod .name{font-weight:800}
+  .pod .percent{font-weight:700}
+  .pod-1{background:linear-gradient(90deg,#e6ffed,#f0fff6);border:3px solid #0f9d58;padding-bottom:8px}
+  .pod-2{background:linear-gradient(90deg,#fffce6,#fff9f0);border:3px solid #f4b400;padding-bottom:8px}
+  .pod-3{background:linear-gradient(90deg,#fff1f0,#fff7f7);border:3px solid #db4437;padding-bottom:8px}
+  .podion-ribbon{font-size:12px;margin-bottom:6px}
+  .avatar img{width:100%;height:100%;object-fit:cover}
+
 </style>
 </head>
 <body>
@@ -59,8 +75,10 @@
         <option value="vice">Vice-Président</option>
         <option value="sec">Secrétaire Général</option>
         <option value="rapporteur">Rapporteur</option>
-        <option value="secretaire">Secrétaire chargé.e de la Citoyenneté</option>
+        <option value="secretaire">Secrétaire</option>
       </select>
+      <label>Photo (optionnel)</label>
+      <input id="candPhoto" type="file" accept="image/*" />
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
         <button id="addCandidate" class="btn primary">Ajouter candidat</button>
       </div>
@@ -79,7 +97,9 @@
       <hr />
 
       <h3>Ajouter plusieurs électeurs (une ligne = un nom)</h3>
-      <textarea id="bulkVoters" placeholder="Koffi\nAmina\n..."></textarea>
+      <textarea id="bulkVoters" placeholder="Koffi
+Amina
+..."></textarea>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
         <button id="bulkAddVoters" class="btn ghost">Ajouter en masse</button>
       </div>
@@ -102,17 +122,21 @@
         <div class="stat"><strong id="statVotes">0</strong><div class="small">Votes</div></div>
       </div>
 
-      <h4 style="margin-top:12px">Liste candidats</h4>
-      <div id="candidatesList" class="list"></div>
+      <h4 style="margin-top:12px">Liste candidats (sélectionnable)</h4>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+        <select id="candidatesDropdown" style="flex:1;padding:8px;border-radius:8px;border:1px solid #eef7ff"></select>
+        <button id="deleteSelectedCandidate" class="btn ghost" title="Supprimer le candidat sélectionné">Suppr</button>
+      </div>
 
-      <h4 style="margin-top:12px">Liste électeurs</h4>
-      <div id="votersList" class="list"></div>
+      <h4 style="margin-top:12px">Liste électeurs (sélectionnable)</h4>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+        <select id="votersDropdown" style="flex:1;padding:8px;border-radius:8px;border:1px solid #eef7ff"></select>
+        <button id="deleteSelectedVoter" class="btn ghost" title="Supprimer l'électeur sélectionné">Suppr</button>
+      </div>
 
-      <h4 style="margin-top:12px">Résultats (en direct)</h4>
-      <table class="results-table" id="resultsTable">
-        <thead><tr><th>Candidat</th><th>Rôle</th><th>Voix</th></tr></thead>
-        <tbody></tbody>
-      </table>
+      <h4 style="margin-top:14px">Podium — par rôle</h4>
+      <div id="podiumContainer" class="podium-wrap"></div>
+
     </aside>
   </div>
 </div>
@@ -137,7 +161,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function(){
   'use strict';
-
   // === CONFIGURE FIREBASE (remplace par ta config) ===
   const firebaseConfig = {
     apiKey: "AIzaSyA_cdwwXT6DRcEm-555RxXETZ0Pwnv0bcQ",
@@ -148,12 +171,13 @@ document.addEventListener('DOMContentLoaded', function(){
     appId: "1:1014390957615:web:2ced35e18d4236451488da",
     measurementId: "G-J8VSKCE3M8"
   };
+  
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-  const FieldValue = firebase.firestore.FieldValue;
 
-  // Admin PIN (change before production)
   const ADMIN_PIN = '1234';
+  const ROLES = ['pres','vice','sec','rapporteur','secretaire'];
+  const ROLE_LABEL = { pres:'Président', vice:'Vice-Président', sec:'Secrétaire Général', rapporteur:'Rapporteur', secretaire:'Secrétaire' };
 
   // DOM refs
   const pinOverlay = document.getElementById('pinOverlay');
@@ -164,6 +188,7 @@ document.addEventListener('DOMContentLoaded', function(){
   const candName = document.getElementById('candName');
   const candEmoji = document.getElementById('candEmoji');
   const candRole = document.getElementById('candRole');
+  const candPhoto = document.getElementById('candPhoto');
   const addCandidate = document.getElementById('addCandidate');
 
   const voterName = document.getElementById('voterName');
@@ -180,241 +205,185 @@ document.addEventListener('DOMContentLoaded', function(){
   const statVoters = document.getElementById('statVoters');
   const statVotes = document.getElementById('statVotes');
 
-  const candidatesList = document.getElementById('candidatesList');
-  const votersList = document.getElementById('votersList');
-  const resultsTableBody = document.querySelector('#resultsTable tbody');
+  const candidatesDropdown = document.getElementById('candidatesDropdown');
+  const deleteSelectedCandidate = document.getElementById('deleteSelectedCandidate');
+  const votersDropdown = document.getElementById('votersDropdown');
+  const deleteSelectedVoter = document.getElementById('deleteSelectedVoter');
 
-  // helper
+  const podiumContainer = document.getElementById('podiumContainer');
+
+  // helpers
   function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
-  function splitLines(text){ return (''+(text||'')).split(/\r?\n/).map(l=>l.trim()).filter(Boolean); }
+function splitLines(text){ return (''+(text||'')).split(/\r?\n/).map(l=>l.trim()).filter(Boolean); }
 
-  // show/hide pin overlay
-  function unlockAdmin(){
-    pinOverlay.style.display = 'none';
-    startRealtimeListeners();
-  }
-  function lockAdmin(){
-    pinOverlay.style.display = 'flex';
-  }
+  function lockAdmin(){ pinOverlay.style.display = 'flex'; }
+  function unlockAdmin(){ pinOverlay.style.display = 'none'; startRealtimeListeners(); }
 
   pinCancel.addEventListener('click', function(){ alert('Accès admin annulé'); });
-  pinSubmit.addEventListener('click', function(){
-    const val = (pinInput && pinInput.value||'').trim();
-    if(val === ADMIN_PIN){ unlockAdmin(); }
-    else { alert('PIN invalide'); }
-  });
+  pinSubmit.addEventListener('click', function(){ const val = (pinInput && pinInput.value||'').trim(); if(val === ADMIN_PIN){ unlockAdmin(); } else { alert('PIN invalide'); } });
 
-  // === CRUD operations ===
-  async function addCandidateToFirestore(name, emoji, role){
-    const doc = {
-      name: name,
-      emoji: emoji || '',
-      role: role || 'pres',
-      votes: 0,
-      createdAt: new Date().toISOString()
-    };
-    await db.collection('candidates').add(doc);
+  // firestore ops
+  async function addCandidateToFirestore(name, emoji, role, photoDataUrl){
+    await db.collection('candidates').add({ name, emoji: emoji||'', role: role||'pres', photo: photoDataUrl||'', createdAt: new Date().toISOString() });
   }
+  async function addVoterToFirestore(name, emoji){ await db.collection('voters').add({ name, emoji: emoji||'', createdAt: new Date().toISOString() }); }
 
-  async function addVoterToFirestore(name, emoji){
-    const doc = {
-      name: name,
-      emoji: emoji || '',
-      createdAt: new Date().toISOString()
-    };
-    await db.collection('voters').add(doc);
-  }
-
-  // add candidate button
-  addCandidate.addEventListener('click', async function(){
-    const name = (candName.value||'').trim();
-    if(!name){ alert('Entrez le nom du candidat'); return; }
-    const emoji = (candEmoji.value||'').trim();
-    const role = (candRole.value||'pres').trim();
-    try{
-      await addCandidateToFirestore(name, emoji, role);
-      candName.value = ''; candEmoji.value = '';
-      alert('Candidat ajouté');
-    }catch(e){ console.error(e); alert('Erreur ajout candidat: '+(e.message||e)); }
+  addCandidate.addEventListener('click', async ()=>{
+    const name = (candName.value||'').trim(); if(!name){ alert('Entrez le nom du candidat'); return; }
+    const emoji = candEmoji.value||''; const role = candRole.value||'pres';
+    // handle optional photo
+    if(candPhoto && candPhoto.files && candPhoto.files[0]){
+      const f = candPhoto.files[0]; const reader = new FileReader(); reader.onload = async function(e){ const dataUrl = e.target.result; try{ await addCandidateToFirestore(name, emoji, role, dataUrl); candName.value=''; candEmoji.value=''; candPhoto.value=''; alert('Candidat ajouté'); }catch(er){ console.error(er); alert('Erreur ajout candidat'); } };
+      reader.readAsDataURL(f);
+    } else {
+      try{ await addCandidateToFirestore(name, emoji, role, ''); candName.value=''; candEmoji.value=''; alert('Candidat ajouté'); }catch(e){ console.error(e); alert('Erreur ajout candidat'); }
+    }
   });
 
-  // add voter
-  addVoter.addEventListener('click', async function(){
-    const name = (voterName.value||'').trim();
-    if(!name){ alert('Entrez le nom de l\\"électeur'); return; }
-    const emoji = (voterEmoji.value||'').trim();
-    try{
-      await addVoterToFirestore(name, emoji);
-      voterName.value=''; voterEmoji.value='';
-      alert('Électeur ajouté');
-    }catch(e){ console.error(e); alert('Erreur ajout électeur'); }
+  addVoter.addEventListener('click', async ()=>{
+    const name = (voterName.value||'').trim(); if(!name){ alert('Entrez le nom de l\'électeur'); return; }
+    try{ await addVoterToFirestore(name, (voterEmoji.value||'')); voterName.value=''; voterEmoji.value=''; alert('Électeur ajouté'); }catch(e){ console.error(e); alert('Erreur ajout électeur'); }
   });
 
-  // bulk add voters
-  bulkAddVoters.addEventListener('click', async function(){
-    const text = (bulkVoters.value||'').trim();
-    const names = splitLines(text);
-    if(names.length === 0){ alert('Collez au moins un nom (une ligne = un nom)'); return; }
-    let added = 0;
-    const batch = db.batch();
+  bulkAddVoters.addEventListener('click', async ()=>{
+    const names = splitLines(bulkVoters.value||''); if(!names.length){ alert('Collez au moins un nom'); return; }
     try{
-      names.forEach(n => {
-        const ref = db.collection('voters').doc();
-        batch.set(ref, { name: n, emoji: '', createdAt: new Date().toISOString() });
-        added++;
-      });
-      await batch.commit();
-      bulkVoters.value='';
-      alert(added + ' électeur(s) ajouté(s).');
+      const batch = db.batch();
+      names.forEach(n=>{ const ref = db.collection('voters').doc(); batch.set(ref, { name: n, emoji: '', createdAt: new Date().toISOString() }); });
+      await batch.commit(); bulkVoters.value=''; alert(names.length+' électeur(s) ajouté(s)');
     }catch(e){ console.error(e); alert('Erreur ajout en masse'); }
   });
 
-  // export JSON (all collections: candidates, voters, votes)
-  exportJson.addEventListener('click', async function(){
+  exportJson.addEventListener('click', async ()=>{
     try{
-      const out = { candidates:[], voters:[], votes:[] };
-      const [candsSnap, votersSnap, votesSnap] = await Promise.all([
-        db.collection('candidates').get(),
-        db.collection('voters').get(),
-        db.collection('votes').get()
-      ]);
-      candsSnap.forEach(d=> out.candidates.push(Object.assign({ id: d.id }, d.data())));
-      votersSnap.forEach(d=> out.voters.push(Object.assign({ id: d.id }, d.data())));
-      votesSnap.forEach(d=> out.votes.push(Object.assign({ id: d.id }, d.data())));
-      const blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'parlement_export.json'; a.click(); URL.revokeObjectURL(url);
-    }catch(e){ console.error(e); alert('Erreur export JSON'); }
+      const out={candidates:[],voters:[],votes:[]};
+      const [cands,vots,vtrs] = await Promise.all([db.collection('candidates').get(), db.collection('votes').get(), db.collection('voters').get()]);
+      cands.forEach(d=>out.candidates.push(Object.assign({id:d.id}, d.data())));
+      vtrs.forEach(d=>out.voters.push(Object.assign({id:d.id}, d.data())));
+      vots.forEach(d=>out.votes.push(Object.assign({id:d.id}, d.data())));
+      const blob = new Blob([JSON.stringify(out,null,2)],{type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='parlement_export.json'; a.click(); URL.revokeObjectURL(url);
+    }catch(e){ console.error(e); alert('Erreur export'); }
   });
 
-  // reset votes: delete votes collection (batched) and set candidate.votes = 0
-  resetVotes.addEventListener('click', async function(){
+  resetVotes.addEventListener('click', async ()=>{
     if(!confirm('Remettre tous les compteurs à zéro ?')) return;
     try{
-      // delete votes in batches of 500
-      const delBatch = async () => {
-        const snap = await db.collection('votes').limit(300).get();
-        if(snap.empty) return;
-        const batch = db.batch();
-        snap.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        // recursive until empty
-        await delBatch();
-      };
+      // delete votes in batches
+      const delBatch = async ()=>{
+        const snap = await db.collection('votes').limit(300).get(); if(snap.empty) return; const batch = db.batch(); snap.forEach(d=>batch.delete(d.ref)); await batch.commit(); await delBatch(); };
       await delBatch();
-      // reset candidates votes
-      const cands = await db.collection('candidates').get();
-      const batch2 = db.batch();
-      cands.forEach(d => { batch2.update(d.ref, { votes: 0 }); });
-      await batch2.commit();
-      alert('Réinitialisé');
-    }catch(e){ console.error(e); alert('Erreur réinitialisation: '+(e.message||e)); }
+      // reset candidate votes
+      const cands = await db.collection('candidates').get(); const batch = db.batch(); cands.forEach(d=>batch.update(d.ref, { votes: 0 })); await batch.commit(); alert('Réinitialisé');
+    }catch(e){ console.error(e); alert('Erreur réinitialisation'); }
   });
 
-  // delete candidate + related votes
-  async function deleteCandidate(cid){
-    if(!confirm('Supprimer ce candidat et ses votes ?')) return;
-    try{
-      // delete votes by candidate in batches
-      const delByCandidate = async () => {
-        const snap = await db.collection('votes').where('candidateId','==', cid).limit(300).get();
-        if(snap.empty) return;
-        const batch = db.batch();
-        snap.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        await delByCandidate();
-      };
-      await delByCandidate();
-      // delete candidate doc
-      await db.collection('candidates').doc(cid).delete();
-      alert('Candidat supprimé');
-    }catch(e){ console.error(e); alert('Erreur suppression candidat'); }
+  async function deleteCandidate(cid){ if(!confirm('Supprimer ce candidat et ses votes ?')) return; try{ const delByCandidate = async ()=>{ const snap = await db.collection('votes').where('candidateId','==',cid).limit(300).get(); if(snap.empty) return; const batch = db.batch(); snap.forEach(d=>batch.delete(d.ref)); await batch.commit(); await delByCandidate(); }; await delByCandidate(); await db.collection('candidates').doc(cid).delete(); alert('Candidat supprimé'); }catch(e){ console.error(e); alert('Erreur suppression candidat'); } }
+
+  async function deleteVoter(vid){ if(!confirm('Supprimer cet électeur et ses votes ?')) return; try{ const delByVoter = async ()=>{ const snap = await db.collection('votes').where('voterId','==',vid).limit(300).get(); if(snap.empty) return; const batch = db.batch(); snap.forEach(d=>batch.delete(d.ref)); await batch.commit(); await delByVoter(); }; await delByVoter(); await db.collection('voters').doc(vid).delete(); alert('Électeur supprimé'); }catch(e){ console.error(e); alert('Erreur suppression électeur'); } }
+
+  deleteSelectedVoter.addEventListener('click', async ()=>{ const opt = votersDropdown.options[votersDropdown.selectedIndex]; if(!opt){ alert('Aucun électeur sélectionné'); return; } const id = opt.value; await deleteVoter(id); });
+  deleteSelectedCandidate.addEventListener('click', async ()=>{ const opt = candidatesDropdown.options[candidatesDropdown.selectedIndex]; if(!opt){ alert('Aucun candidat sélectionné'); return; } const id = opt.value; await deleteCandidate(id); });
+
+  // podium helpers — use candidate.photo if present else generate child avatar
+  function childAvatarDataUrl(seed){ const colors = ['#704214','#4b2e83','#2b4f77','#5a3c2b']; const c = colors[Math.abs(hashCode(seed||'a')) % colors.length]; const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'>"+
+      "<rect width='120' height='120' rx='60' fill='%23fff'/>"+
+      "<g transform='translate(0,42)'>"+
+        "<path d='M0,40 L120,40 L120,70 L0,70 Z' fill='%23eee'/>"+
+        "<polygon points='0,40 120,0 120,20 0,60' fill='%2308a200'/>"+
+        "<polygon points='0,60 120,20 120,40 0,80' fill='%23f7d117'/>"+
+        "<polygon points='0,80 120,40 120,60 0,100' fill='%23d91f2a'/>"+
+      "</g>"+
+      "<circle cx='60' cy='44' r='28' fill='%23f6d6b8'/>"+
+      "<path d='M42,44 Q60,30 78,44' fill='"+c+"'/>"+
+      "<circle cx='50' cy='48' r='3' fill='%230b2b3a'/>"+
+      "<circle cx='70' cy='48' r='3' fill='%230b2b3a'/>"+
+      "<path d='M50,58 Q60,66 70,58' stroke='%230b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/>"+
+      "</svg>";
+    return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+  }
+  function hashCode(str){ let h=0; for(let i=0;i<str.length;i++){ h = ((h<<5)-h) + str.charCodeAt(i); h |= 0; } return h; }
+
+  function makePodiumHtmlForRole(role){
+    const id = 'pod_'+role;
+    return `
+      <div class="role-block" id="${id}">
+        <strong>${ROLE_LABEL[role]||role}</strong>
+        <div class="podium" data-role="${role}">
+          <div class="pod pod-2" data-pos="2">
+            <div class="podion-ribbon">2</div>
+            <div class="avatar" data-avatar="${role}_2"></div>
+            <div class="name" data-name="${role}_2">—</div>
+            <div class="percent" data-pct="${role}_2">0%</div>
+          </div>
+          <div class="pod pod-1" data-pos="1">
+            <div class="podion-ribbon">1</div>
+            <div class="avatar" data-avatar="${role}_1"></div>
+            <div class="name" data-name="${role}_1">—</div>
+            <div class="percent" data-pct="${role}_1">0%</div>
+          </div>
+          <div class="pod pod-3" data-pos="3">
+            <div class="podion-ribbon">3</div>
+            <div class="avatar" data-avatar="${role}_3"></div>
+            <div class="name" data-name="${role}_3">—</div>
+            <div class="percent" data-pct="${role}_3">0%</div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
-  // delete voter + related votes
-  async function deleteVoter(vid){
-    if(!confirm('Supprimer cet électeur et ses votes ?')) return;
-    try{
-      const delByVoter = async () => {
-        const snap = await db.collection('votes').where('voterId','==', vid).limit(300).get();
-        if(snap.empty) return;
-        const batch = db.batch();
-        snap.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        await delByVoter();
-      };
-      await delByVoter();
-      await db.collection('voters').doc(vid).delete();
-      alert('Électeur supprimé');
-    }catch(e){ console.error(e); alert('Erreur suppression électeur'); }
+  function updatePodiumForRole(role, candidates){
+    const sorted = (candidates||[]).slice().sort((a,b)=> (b.votes||0) - (a.votes||0));
+    const total = (candidates||[]).reduce((s,c)=>s+(c.votes||0),0) || 0;
+    const top1 = sorted[0]||null, top2 = sorted[1]||null, top3 = sorted[2]||null;
+    const set = (slot, cand)=>{
+      const avatarEl = podiumContainer.querySelector('[data-avatar="'+role+'_'+slot+'"]');
+      const nameEl = podiumContainer.querySelector('[data-name="'+role+'_'+slot+'"]');
+      const pctEl = podiumContainer.querySelector('[data-pct="'+role+'_'+slot+'"]');
+      if(!nameEl || !pctEl) return;
+      if(!cand){ if(avatarEl) avatarEl.innerHTML=''; nameEl.textContent='—'; pctEl.textContent='0%'; return; }
+      const url = (cand.photo && cand.photo.length>10) ? cand.photo : childAvatarDataUrl(cand.name || cand.id);
+      if(avatarEl) avatarEl.innerHTML = '<img src="'+url+'" alt="avatar">';
+      nameEl.textContent = cand.name || '—';
+      const pct = total? Math.round((cand.votes||0)/total*100) : 0; pctEl.textContent = pct + '%';
+    };
+    set(1, top1); set(2, top2); set(3, top3);
   }
 
-  // === realtime listeners for admin UI ===
-  let unsubCandidates = null, unsubVoters = null, unsubVotes = null;
+  // realtime listeners
+  let unsubCandidates=null, unsubVoters=null, unsubVotes=null;
   function startRealtimeListeners(){
-    // unsubscribe previous if needed
-    if(unsubCandidates) unsubCandidates();
-    if(unsubVoters) unsubVoters();
-    if(unsubVotes) unsubVotes();
+    if(unsubCandidates) unsubCandidates(); if(unsubVoters) unsubVoters(); if(unsubVotes) unsubVotes();
 
-    unsubCandidates = db.collection('candidates').onSnapshot(snap => {
-      // update candidate list and results table
-      candidatesList.innerHTML = '';
-      resultsTableBody.innerHTML = '';
-      const cands = [];
-      snap.forEach(d => {
-        const data = Object.assign({ id: d.id }, d.data());
-        cands.push(data);
-        // list item
-        const it = document.createElement('div'); it.className = 'item';
-        const left = document.createElement('div'); left.innerHTML = (data.emoji ? (data.emoji + ' ') : '') + '<strong>' + (data.name||'—') + '</strong> <div class="small">'+ (data.role||'') + '</div>';
-        const right = document.createElement('div');
-        const del = document.createElement('button'); del.className='btn ghost'; del.textContent='Supprimer';
-        del.addEventListener('click', ()=> deleteCandidate(data.id));
-        right.appendChild(del);
-        it.appendChild(left); it.appendChild(right);
-        candidatesList.appendChild(it);
+    // build podiumContainer html (once)
+    podiumContainer.innerHTML = '';
+    ROLES.forEach(r=>{ podiumContainer.insertAdjacentHTML('beforeend', makePodiumHtmlForRole(r)); });
 
-        // results row
-        const tr = document.createElement('tr');
-        const td1 = document.createElement('td'); td1.textContent = data.name || '—';
-        const td2 = document.createElement('td'); td2.textContent = data.role || '';
-        const td3 = document.createElement('td'); td3.textContent = data.votes || 0;
-        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
-        resultsTableBody.appendChild(tr);
-      });
+    unsubCandidates = db.collection('candidates').onSnapshot(snap=>{
+      // populate dropdown
+      candidatesDropdown.innerHTML = '';
+      const allCands = [];
+      snap.forEach(d=>{ const c = Object.assign({ id:d.id }, d.data()); allCands.push(c); const opt = document.createElement('option'); opt.value = c.id; opt.textContent = (c.emoji? c.emoji+' ':'') + (c.name||'—') + ' ('+(ROLE_LABEL[c.role]||c.role)+')'; candidatesDropdown.appendChild(opt); });
       statCandidates.textContent = snap.size;
+      // update podium per role
+      ROLES.forEach(role=>{
+        const filtered = allCands.filter(x=> (x.role||'pres') === role);
+        updatePodiumForRole(role, filtered);
+      });
     });
 
-    unsubVoters = db.collection('voters').onSnapshot(snap => {
-      votersList.innerHTML = '';
-      snap.forEach(d => {
-        const v = Object.assign({ id: d.id }, d.data());
-        const it = document.createElement('div'); it.className='item';
-        const left = document.createElement('div'); left.innerHTML = (v.emoji ? (v.emoji + ' ') : '') + '<strong>' + (v.name||'—') + '</strong>';
-        const right = document.createElement('div');
-        const del = document.createElement('button'); del.className='btn ghost'; del.textContent='Supprimer';
-        del.addEventListener('click', ()=> deleteVoter(v.id));
-        right.appendChild(del);
-        it.appendChild(left); it.appendChild(right);
-        votersList.appendChild(it);
-      });
+    unsubVoters = db.collection('voters').onSnapshot(snap=>{
+      votersDropdown.innerHTML = '';
+      snap.forEach(d=>{ const v = Object.assign({ id:d.id }, d.data()); const opt = document.createElement('option'); opt.value = v.id; opt.textContent = (v.emoji? v.emoji+' ':'') + (v.name||'—'); votersDropdown.appendChild(opt); });
       statVoters.textContent = snap.size;
     });
 
-    unsubVotes = db.collection('votes').onSnapshot(snap => {
-      statVotes.textContent = snap.size;
-      // we don't render votes list here, admin can export JSON to get details
-    });
+    unsubVotes = db.collection('votes').onSnapshot(snap=>{ statVotes.textContent = snap.size; });
   }
 
-  // on page load, pin overlay visible; call lockAdmin to ensure it's shown
   lockAdmin();
-
-  // debug expose (optional)
-  window.__admin_db = db;
-
-}); // DOMContentLoaded
+  window.__admin_db = db; // debug
+});
 </script>
 </body>
 </html>
