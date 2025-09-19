@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Parlement des Enfants — Résultats & Podiums (corrigé)</title>
+<title>Parlement des Enfants — Résultats & Podiums</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
   header{display:flex;align-items:center;gap:16px;justify-content:space-between}
   .logo-area{display:flex;align-items:center;gap:12px}
   .logo-preview{width:92px;height:92px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(6,20,40,0.06);overflow:hidden}
-  .logo-preview img{width:100%;height:100%;object-fit:contain; background-image: url('logope.png');}
+  .logo-preview img{width:100%;height:100%;object-fit:contain}
   h1{font-size:40px;margin:14px 0 6px}
   .subtitle{color:var(--muted);font-size:14px}
   main{width:100%;margin-top:18px}
@@ -47,8 +47,8 @@
     <header>
       <div class="logo-area">
         <div class="logo-preview" id="logoPreview">
-         
-          <img src="logope.png" alt="Logo Parlement des enfants" title="Logo Parlement des enfants" style="width:100px;height:100px;vertical-align:middle;cursor:pointer"/>
+          <!-- logo will be shown here -->
+          <span id="logoPlaceholder" style="color:#6b7280;font-weight:700">LOGO</span>
         </div>
         <div>
           <div style="font-weight:900;color:#0b2b3a">Parlement des Enfants</div>
@@ -56,7 +56,7 @@
         </div>
       </div>
       <div>
-        <img src="logope.png" alt="Logo Parlement des enfants" title="Logo Parlement des enfants" style="width:100px;height:100px;vertical-align:middle;cursor:pointer"/>
+        <label for="logoInput" style="cursor:pointer;padding:8px 12px;border-radius:10px;background:#eef9ff;border:1px solid #dff4ff;font-weight:700">Importer</label>
         <input id="logoInput" type="file" accept="image/*" style="display:none" />
       </div>
     </header>
@@ -76,7 +76,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script>
-// --- Replace with your Firebase config (kept same as before) ---
+// --- Replace with your Firebase config if needed ---
 const firebaseConfig = {
   apiKey: "AIzaSyA_cdwwXT6DRcEm-555RxXETZ0Pwnv0bcQ",
   authDomain: "parlementvotesystemv1.firebaseapp.com",
@@ -85,21 +85,20 @@ const firebaseConfig = {
   messagingSenderId: "1014390957615",
   appId: "1:1014390957615:web:2ced35e18d4236451488da"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Roles we display (order matters)
+// Roles we display (order matters) — added 'relations'
 const ROLES = [
   { key: 'pres', title: 'Président' },
   { key: 'vice', title: 'Vice-Président' },
   { key: 'sec', title: 'Secrétaire Général' },
   { key: 'rapporteur', title: 'Rapporteur' },
-  { key: 'secretaire', title: 'Secrétaire chargé.e de la Citoyenneté' }
+  { key: 'secretaire', title: 'Secrétaire chargé.e de la Citoyenneté' },
+  { key: 'relations', title: 'Chargé·e Relations avec le Parlement et autres organes' }
 ];
 
 const rolesContainer = document.getElementById('rolesContainer');
-const congratsEl = document.getElementById('congrats');
 const subtitleLive = document.getElementById('subtitleLive');
 
 // Prepare DOM sections for each role
@@ -115,7 +114,7 @@ ROLES.forEach(r => {
   rolesContainer.appendChild(section);
 });
 
-// deterministic child avatar (same generator)
+// deterministic child avatar generator (same approach as index)
 function seededRandom(seed) {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -123,33 +122,7 @@ function seededRandom(seed) {
 }
 function childAvatarDataUrl(seed){ const rnd = seededRandom(seed || String(Math.random())); const skinTones=['#f6d6b8','#f0c8a0','#e6b38a','#d39a6c','#b58155']; const scarf=['#08a200','#f7d117','#d91f2a','#3b82f6']; const bg=['#fff','#fffaf0','#f7fff9']; const skin = skinTones[Math.floor(rnd()*skinTones.length)]; const sc = scarf[Math.floor(rnd()*scarf.length)]; const b = bg[Math.floor(rnd()*bg.length)]; const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 120 120'><rect width='120' height='120' rx='14' fill='${b}'/><g transform='translate(10,10)'><circle cx='50' cy='40' r='28' fill='${skin}'/><circle cx='40' cy='36' r='3' fill='#0b2b3a'/><circle cx='60' cy='36' r='3' fill='#0b2b3a'/><path d='M40,48 Q50,56 60,48' stroke='#0b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/><path d='M22,32 Q42,18 78,28 Q62,18 38,22 Z' fill='#2f1b0b' opacity='0.95'/><g transform='translate(0,72)'><rect x='0' y='0' width='120' height='18' fill='${sc}'/></g></g></svg>`; return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg); }
 
-// normalize role -> canonical key
-function normalizeRoleKey(raw){
-  if(!raw || typeof raw !== 'string') return 'pres';
-  // remove accents
-  let s = raw.toString().trim().toLowerCase();
-  s = s.normalize ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : s;
-  // remove punctuation and underscores/extra spaces
-  s = s.replace(/[_\-\.]/g,' ').replace(/\s+/g,' ').trim();
-
-  // priority rules (important to avoid confusion):
-  // 1) If contains 'citoy' -> secretaire (Citoyenneté)
-  if(s.includes('citoy')) return 'secretaire';
-  // 2) If contains 'secretaire' AND 'general' -> sec (Secrétaire Général)
-  if(s.includes('secretaire') && (s.includes('general') || s.includes('g') || s.includes('gener'))) return 'sec';
-  // 3) If contains 'secretaire' alone -> secretaire (citoyenneté)  <-- important: plain 'secretaire' treated as Citoyenneté
-  if(s.includes('secretaire')) return 'secretaire';
-  // 4) rapporteur
-  if(s.includes('rapport')) return 'rapporteur';
-  // 5) vice
-  if(s.includes('vice')) return 'vice';
-  // 6) president
-  if(s.includes('president') || s.includes('pres')) return 'pres';
-  // default
-  return 'pres';
-}
-
-// helper: compute podium (top 3) and percentage
+// compute top3 and percent
 function computePodium(candidates, votes){
   const counts = {};
   candidates.forEach(c => counts[c.id] = 0);
@@ -161,57 +134,82 @@ function computePodium(candidates, votes){
   return { top3, total };
 }
 
-// Real-time listeners
+/* Robust normalize: prefer explicit keys, else heuristics */
+function normalizeRoleKeyFromString(raw){
+  if(!raw) return '';
+  const r = String(raw).toLowerCase().normalize ? String(raw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'') : String(raw).toLowerCase();
+  // direct match to our keys
+  if(['pres','vice','sec','rapporteur','secretaire','relations'].includes(r)) return r;
+  // heuristics
+  if(r.includes('relations') || r.includes('parlement') || r.includes('organe') || r.includes('relation')) return 'relations';
+  if(r.includes('citoy')) return 'secretaire';
+  if(r.includes('general') || r.includes('g') && r.includes('secretaire')) return 'sec';
+  if(r.includes('rapport')) return 'rapporteur';
+  if(r.includes('vice')) return 'vice';
+  if(r.includes('pres')) return 'pres';
+  return r; // fallback use raw
+}
+
+// caches
 let candidatesCache = [];
 let votesCache = [];
 
+/* subscribe candidates */
 const candidatesUnsub = db.collection('candidates').onSnapshot(snap => {
   candidatesCache = [];
   snap.forEach(d => {
-    const raw = { id: d.id, ...d.data() };
-    raw.normRole = normalizeRoleKey(raw.role || '');
-    candidatesCache.push(raw);
+    const data = { id: d.id, ...d.data() };
+    // normalize role field if present (store both raw and normalized)
+    data.normalizedRole = normalizeRoleKeyFromString(data.role || (data.roleKey || ''));
+    candidatesCache.push(data);
   });
-  console.debug('loaded candidates:', candidatesCache.map(c=>({id:c.id,role:c.role,normRole:c.normRole})));
   renderAll();
 }, err => { console.error('candidates listener error', err); });
 
+/* subscribe votes */
 const votesUnsub = db.collection('votes').onSnapshot(snap => {
   votesCache = [];
-  snap.forEach(d => {
-    const raw = { id: d.id, ...d.data() };
-    // normalize stored vote role too (in case it was saved free-text)
-    raw.normRole = normalizeRoleKey(raw.role || '');
-    votesCache.push(raw);
-  });
-  console.debug('loaded votes total:', votesCache.length, 'sample:', votesCache.slice(0,8));
+  snap.forEach(d => votesCache.push({ id: d.id, ...d.data() }));
   renderAll();
 }, err => { console.error('votes listener error', err); });
 
 function renderAll(){
   ROLES.forEach(r => {
     const roleKey = r.key;
-    // filter candidates strictly by normalized role
-    const roleCandidates = candidatesCache.filter(c => c.normRole === roleKey);
-    // fallback: if no candidates found for 'sec' try slightly permissive match (to catch unexpected variants)
-    if(roleKey === 'sec' && roleCandidates.length === 0){
-      // permissive: include candidates whose normalized role contains 'secretaire' + 'general' in original role string
-      const fallback = candidatesCache.filter(c => {
-        const raw = (c.role||'').toString().toLowerCase();
-        const normRaw = raw.normalize ? raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'') : raw;
-        return (normRaw.includes('secretaire') && (normRaw.includes('general') || normRaw.includes('g') || normRaw.includes('gener')));
-      });
-      if(fallback.length>0){
-        // annotate and use them
-        fallback.forEach(x => x.normRole = 'sec');
-        console.debug('fallback candidates assigned to sec:', fallback.map(f=>f.id));
+    // choose candidates whose normalizedRole === roleKey, fallback to match on raw
+    const roleCandidates = candidatesCache.filter(c => {
+      if(c.normalizedRole && typeof c.normalizedRole === 'string'){
+        return c.normalizedRole === roleKey;
       }
-      // merge fallback into roleCandidates for rendering
-      roleCandidates.push(...fallback);
-    }
+      // fallback: check raw role text
+      const raw = (c.role||'').toString().toLowerCase();
+      const rn = raw.normalize ? raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'') : raw;
+      if(roleKey === 'secretaire'){
+        return rn.includes('citoy') || rn.includes('secretaire') && rn.includes('citoy') || rn === 'secretaire' || rn.includes('charg');
+      }
+      if(roleKey === 'sec'){
+        return rn.includes('secretaire') && (rn.includes('general') || rn.includes('g') || rn.includes('general'));
+      }
+      if(roleKey === 'rapporteur'){
+        return rn.includes('rapport');
+      }
+      if(roleKey === 'vice'){
+        return rn.includes('vice');
+      }
+      if(roleKey === 'relations'){
+        return rn.includes('relations') || rn.includes('parlement') || rn.includes('organe') || rn.includes('relation');
+      }
+      // default pres
+      return rn === 'pres' || rn.includes('pres') || (!rn.includes('vice') && !rn.includes('rapport') && !rn.includes('secretaire') && !rn.includes('relations') && !rn.includes('parlement') && !rn.includes('organe'));
+    });
 
-    // collect votes normalized by normRole
-    const roleVotes = votesCache.filter(v => (v.normRole || v.role || '').toString().toLowerCase() === roleKey);
+    // filter votes by role field in votes (assumes votes store normalized role keys)
+    const roleVotes = votesCache.filter(v => {
+      if(!v || !v.role) return false;
+      const rv = (v.role||'').toString().toLowerCase();
+      return rv === roleKey;
+    });
+
     const { top3, total } = computePodium(roleCandidates, roleVotes);
     const podiumEl = document.getElementById('podium_'+roleKey);
     const subEl = document.getElementById('role_sub_'+roleKey);
@@ -219,10 +217,14 @@ function renderAll(){
     if(!podiumEl) return;
     podiumEl.innerHTML = '';
 
-    if(top3.length === 0){ podiumEl.innerHTML = '<div class="empty">Aucun candidat pour ce rôle</div>'; return; }
+    if(top3.length === 0){
+      podiumEl.innerHTML = '<div class="empty">Aucun candidat pour ce rôle</div>';
+      return;
+    }
 
+    // Always render 3 pods
     for(let i=0;i<3;i++){
-      const p = top3[i] || { place:i+1, name:'—', votes:0, percent:0, id:'fallback'+i };
+      const p = top3[i] || { place:i+1, name:'—', votes:0, percent:0, id: ('fallback'+i) };
       const pod = document.createElement('div'); pod.className = 'pod ' + (i===0? 'first' : i===1? 'second' : 'third');
       const place = document.createElement('div'); place.className = 'place'; place.textContent = (i===0? '1er' : i===1? '2ème' : '3ème');
       const avWrap = document.createElement('div'); avWrap.className = 'avatar';
@@ -237,18 +239,20 @@ function renderAll(){
     }
   });
 
+  // Update summarized subtitle
   const totalVotesAll = votesCache.length;
   subtitleLive.textContent = totalVotesAll + ' vote(s) enregistrés — mise à jour en temps réel.';
 }
 
-// logo upload handling (local only)
+// logo upload (local preview)
 const logoInput = document.getElementById('logoInput');
 const logoPreview = document.getElementById('logoPreview');
 const logoPlaceholder = document.getElementById('logoPlaceholder');
 logoInput.addEventListener('change', function(ev){ const f = ev.target.files && ev.target.files[0]; if(!f) return; const reader = new FileReader(); reader.onload = function(e){ logoPreview.innerHTML = '<img src="'+e.target.result+'" alt="logo">'; }; reader.readAsDataURL(f); });
 
-// initial render (empty until listeners populate)
+// initial render
 renderAll();
+
 </script>
 </body>
 </html>
