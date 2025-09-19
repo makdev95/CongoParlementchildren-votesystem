@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Parlement des Enfants — Résultats & Podiums (corrigé)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f7feff;--card:#fff;--accent:#0277bd;--muted:#55607a}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#e9f7ff);color:#082033;display:flex;flex-direction:column;align-items:center;padding:18px}
+  .container{width:100%;max-width:1200px}
+  header{display:flex;align-items:center;gap:16px;justify-content:space-between}
+  .logo-area{display:flex;align-items:center;gap:12px}
+  .logo-preview{width:92px;height:92px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(6,20,40,0.06);overflow:hidden}
+  .logo-preview img{width:100%;height:100%;object-fit:contain; background-image: url('logope.png');}
+  h1{font-size:40px;margin:14px 0 6px}
+  .subtitle{color:var(--muted);font-size:14px}
+  main{width:100%;margin-top:18px}
+  .role-section{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 8px 32px rgba(6,20,40,0.06);margin-bottom:18px}
+  .role-head{display:flex;align-items:center;justify-content:space-between}
+  .role-title{font-weight:800;font-size:20px}
+  .podium{display:flex;gap:18px;align-items:flex-end;justify-content:center;margin-top:12px}
+  .pod{width:220px;border-radius:12px;padding:12px;background:linear-gradient(180deg,#fff,#f8fffb);text-align:center;box-shadow:0 6px 20px rgba(6,20,40,0.04)}
+  .pod .place{font-weight:900;font-size:22px;margin-bottom:8px}
+  .pod .avatar{width:120px;height:120px;border-radius:50%;overflow:hidden;margin:0 auto;border:6px solid #fff;box-shadow:0 8px 30px rgba(6,20,40,0.08)}
+  .pod .name{font-weight:800;margin-top:8px}
+  .pod .percent{font-weight:700;margin-top:6px}
+  .pod.first{background:linear-gradient(180deg,#f0fff4,#ecfff6);border:3px solid #08a200}
+  .pod.second{background:linear-gradient(180deg,#fffdf4,#fff9ec);border:3px solid #f7d117}
+  .pod.third{background:linear-gradient(180deg,#fff4f4,#fff8f8);border:3px solid #d91f2a}
+
+  .large-msg{width:100%;background:linear-gradient(90deg,#fff,#f0fff6);border-radius:12px;padding:20px;margin:18px 0;text-align:center}
+  .large-msg h2{font-size:48px;margin:0;color:#0b7a2a}
+
+  .empty{color:var(--muted);text-align:center;padding:40px}
+
+  footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+
+  @media (max-width:900px){ .podium{flex-direction:column-reverse;align-items:center} .pod{width:92%;max-width:360px} .logo-preview{width:68px;height:68px} h1{font-size:28px} .large-msg h2{font-size:28px} }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-area">
+        <div class="logo-preview" id="logoPreview">
+         
+          <img src="logope.png" alt="Logo Parlement des enfants" title="Logo Parlement des enfants" style="width:100px;height:100px;vertical-align:middle;cursor:pointer"/>
+        </div>
+        <div>
+          <div style="font-weight:900;color:#0b2b3a">Parlement des Enfants</div>
+          <div class="subtitle">Résultats officiels 2025 — Podiums en direct</div>
+        </div>
+      </div>
+      <div>
+        <img src="logope.png" alt="Logo Parlement des enfants" title="Logo Parlement des enfants" style="width:100px;height:100px;vertical-align:middle;cursor:pointer"/>
+        <input id="logoInput" type="file" accept="image/*" style="display:none" />
+      </div>
+    </header>
+
+    <div class="large-msg" role="status" aria-live="polite">
+      <h2 id="congrats">FÉLICITATIONS à tous les participants 🎉</h2>
+      <div id="subtitleLive" style="margin-top:6px;color:var(--muted)"></div>
+    </div>
+
+    <main id="rolesContainer">
+      <!-- role sections will be injected here -->
+    </main>
+
+    <footer>Affichage public des podiums — mis à jour en temps réel</footer>
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script>
+// --- Replace with your Firebase config (kept same as before) ---
+const firebaseConfig = {
+  apiKey: "AIzaSyA_cdwwXT6DRcEm-555RxXETZ0Pwnv0bcQ",
+  authDomain: "parlementvotesystemv1.firebaseapp.com",
+  projectId: "parlementvotesystemv1",
+  storageBucket: "parlementvotesystemv1.firebasestorage.app",
+  messagingSenderId: "1014390957615",
+  appId: "1:1014390957615:web:2ced35e18d4236451488da"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Roles we display (order matters)
+const ROLES = [
+  { key: 'pres', title: 'Président' },
+  { key: 'vice', title: 'Vice-Président' },
+  { key: 'sec', title: 'Secrétaire Général' },
+  { key: 'rapporteur', title: 'Rapporteur' },
+  { key: 'secretaire', title: 'Secrétaire chargé.e de la Citoyenneté' }
+];
+
+const rolesContainer = document.getElementById('rolesContainer');
+const congratsEl = document.getElementById('congrats');
+const subtitleLive = document.getElementById('subtitleLive');
+
+// Prepare DOM sections for each role
+ROLES.forEach(r => {
+  const section = document.createElement('section'); section.className = 'role-section'; section.id = 'role_'+r.key;
+  section.innerHTML = `
+    <div class="role-head">
+      <div class="role-title">${r.title}</div>
+      <div class="role-sub" id="role_sub_${r.key}"></div>
+    </div>
+    <div class="podium" id="podium_${r.key}"></div>
+  `;
+  rolesContainer.appendChild(section);
+});
+
+// deterministic child avatar (same generator)
+function seededRandom(seed) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return function(){ h += 0x6D2B79F5; let t = Math.imul(h ^ (h >>> 15), 1 | h); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function childAvatarDataUrl(seed){ const rnd = seededRandom(seed || String(Math.random())); const skinTones=['#f6d6b8','#f0c8a0','#e6b38a','#d39a6c','#b58155']; const scarf=['#08a200','#f7d117','#d91f2a','#3b82f6']; const bg=['#fff','#fffaf0','#f7fff9']; const skin = skinTones[Math.floor(rnd()*skinTones.length)]; const sc = scarf[Math.floor(rnd()*scarf.length)]; const b = bg[Math.floor(rnd()*bg.length)]; const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 120 120'><rect width='120' height='120' rx='14' fill='${b}'/><g transform='translate(10,10)'><circle cx='50' cy='40' r='28' fill='${skin}'/><circle cx='40' cy='36' r='3' fill='#0b2b3a'/><circle cx='60' cy='36' r='3' fill='#0b2b3a'/><path d='M40,48 Q50,56 60,48' stroke='#0b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/><path d='M22,32 Q42,18 78,28 Q62,18 38,22 Z' fill='#2f1b0b' opacity='0.95'/><g transform='translate(0,72)'><rect x='0' y='0' width='120' height='18' fill='${sc}'/></g></g></svg>`; return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg); }
+
+// normalize role -> canonical key
+function normalizeRoleKey(raw){
+  if(!raw || typeof raw !== 'string') return 'pres';
+  // remove accents
+  let s = raw.toString().trim().toLowerCase();
+  s = s.normalize ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : s;
+  // remove punctuation and underscores/extra spaces
+  s = s.replace(/[_\-\.]/g,' ').replace(/\s+/g,' ').trim();
+
+  // priority rules (important to avoid confusion):
+  // 1) If contains 'citoy' -> secretaire (Citoyenneté)
+  if(s.includes('citoy')) return 'secretaire';
+  // 2) If contains 'secretaire' AND 'general' -> sec (Secrétaire Général)
+  if(s.includes('secretaire') && (s.includes('general') || s.includes('g') || s.includes('gener'))) return 'sec';
+  // 3) If contains 'secretaire' alone -> secretaire (citoyenneté)  <-- important: plain 'secretaire' treated as Citoyenneté
+  if(s.includes('secretaire')) return 'secretaire';
+  // 4) rapporteur
+  if(s.includes('rapport')) return 'rapporteur';
+  // 5) vice
+  if(s.includes('vice')) return 'vice';
+  // 6) president
+  if(s.includes('president') || s.includes('pres')) return 'pres';
+  // default
+  return 'pres';
+}
+
+// helper: compute podium (top 3) and percentage
+function computePodium(candidates, votes){
+  const counts = {};
+  candidates.forEach(c => counts[c.id] = 0);
+  votes.forEach(v => { if(v && v.candidateId && counts.hasOwnProperty(v.candidateId)) counts[v.candidateId]++ });
+  const list = candidates.map(c => ({ ...c, votes: counts[c.id] || 0 }));
+  list.sort((a,b) => b.votes - a.votes);
+  const total = list.reduce((s,c)=>s+c.votes,0) || 0;
+  const top3 = list.slice(0,3).map((c, idx) => ({ place: idx+1, id: c.id, name: c.name, imageUrl: c.imageUrl, votes: c.votes, percent: total>0? Math.round((c.votes/total)*100):0 }));
+  return { top3, total };
+}
+
+// Real-time listeners
+let candidatesCache = [];
+let votesCache = [];
+
+const candidatesUnsub = db.collection('candidates').onSnapshot(snap => {
+  candidatesCache = [];
+  snap.forEach(d => {
+    const raw = { id: d.id, ...d.data() };
+    raw.normRole = normalizeRoleKey(raw.role || '');
+    candidatesCache.push(raw);
+  });
+  console.debug('loaded candidates:', candidatesCache.map(c=>({id:c.id,role:c.role,normRole:c.normRole})));
+  renderAll();
+}, err => { console.error('candidates listener error', err); });
+
+const votesUnsub = db.collection('votes').onSnapshot(snap => {
+  votesCache = [];
+  snap.forEach(d => {
+    const raw = { id: d.id, ...d.data() };
+    // normalize stored vote role too (in case it was saved free-text)
+    raw.normRole = normalizeRoleKey(raw.role || '');
+    votesCache.push(raw);
+  });
+  console.debug('loaded votes total:', votesCache.length, 'sample:', votesCache.slice(0,8));
+  renderAll();
+}, err => { console.error('votes listener error', err); });
+
+function renderAll(){
+  ROLES.forEach(r => {
+    const roleKey = r.key;
+    // filter candidates strictly by normalized role
+    const roleCandidates = candidatesCache.filter(c => c.normRole === roleKey);
+    // fallback: if no candidates found for 'sec' try slightly permissive match (to catch unexpected variants)
+    if(roleKey === 'sec' && roleCandidates.length === 0){
+      // permissive: include candidates whose normalized role contains 'secretaire' + 'general' in original role string
+      const fallback = candidatesCache.filter(c => {
+        const raw = (c.role||'').toString().toLowerCase();
+        const normRaw = raw.normalize ? raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'') : raw;
+        return (normRaw.includes('secretaire') && (normRaw.includes('general') || normRaw.includes('g') || normRaw.includes('gener')));
+      });
+      if(fallback.length>0){
+        // annotate and use them
+        fallback.forEach(x => x.normRole = 'sec');
+        console.debug('fallback candidates assigned to sec:', fallback.map(f=>f.id));
+      }
+      // merge fallback into roleCandidates for rendering
+      roleCandidates.push(...fallback);
+    }
+
+    // collect votes normalized by normRole
+    const roleVotes = votesCache.filter(v => (v.normRole || v.role || '').toString().toLowerCase() === roleKey);
+    const { top3, total } = computePodium(roleCandidates, roleVotes);
+    const podiumEl = document.getElementById('podium_'+roleKey);
+    const subEl = document.getElementById('role_sub_'+roleKey);
+    if(subEl) subEl.textContent = total + ' vote(s)';
+    if(!podiumEl) return;
+    podiumEl.innerHTML = '';
+
+    if(top3.length === 0){ podiumEl.innerHTML = '<div class="empty">Aucun candidat pour ce rôle</div>'; return; }
+
+    for(let i=0;i<3;i++){
+      const p = top3[i] || { place:i+1, name:'—', votes:0, percent:0, id:'fallback'+i };
+      const pod = document.createElement('div'); pod.className = 'pod ' + (i===0? 'first' : i===1? 'second' : 'third');
+      const place = document.createElement('div'); place.className = 'place'; place.textContent = (i===0? '1er' : i===1? '2ème' : '3ème');
+      const avWrap = document.createElement('div'); avWrap.className = 'avatar';
+      const img = document.createElement('img'); img.alt = p.name || '—'; img.width = 120; img.height = 120; img.style.width='120px'; img.style.height='120px'; img.style.objectFit='cover'; img.style.display='block';
+      if(p.imageUrl) img.src = p.imageUrl;
+      else img.src = childAvatarDataUrl(p.id || ('fallback'+i));
+      avWrap.appendChild(img);
+      const name = document.createElement('div'); name.className = 'name'; name.textContent = p.name || '—';
+      const percent = document.createElement('div'); percent.className = 'percent'; percent.textContent = (p.percent||0) + '% • ' + (p.votes||0) + ' voix';
+      pod.appendChild(place); pod.appendChild(avWrap); pod.appendChild(name); pod.appendChild(percent);
+      podiumEl.appendChild(pod);
+    }
+  });
+
+  const totalVotesAll = votesCache.length;
+  subtitleLive.textContent = totalVotesAll + ' vote(s) enregistrés — mise à jour en temps réel.';
+}
+
+// logo upload handling (local only)
+const logoInput = document.getElementById('logoInput');
+const logoPreview = document.getElementById('logoPreview');
+const logoPlaceholder = document.getElementById('logoPlaceholder');
+logoInput.addEventListener('change', function(ev){ const f = ev.target.files && ev.target.files[0]; if(!f) return; const reader = new FileReader(); reader.onload = function(e){ logoPreview.innerHTML = '<img src="'+e.target.result+'" alt="logo">'; }; reader.readAsDataURL(f); });
+
+// initial render (empty until listeners populate)
+renderAll();
+</script>
+</body>
+</html>
