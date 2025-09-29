@@ -1,156 +1,113 @@
-<!doctype html>
+<!doctype html> 
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Parlement des Enfants — Admin (Podium & Dropdown per role)</title>
+<title>Parlement des Enfants — Voter</title>
 <style>
   :root{--bg:#f4fbff;--card:#fff;--accent:#0277bd;--muted:#55607a}
   *{box-sizing:border-box}
   body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#e9f7ff);color:#082033;display:flex;align-items:flex-start;justify-content:center;padding:18px}
-  .container{width:100%;max-width:1200px}
+  .container{width:100%;max-width:1100px}
   header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
   .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#066fb2,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
   h1{margin:0;font-size:20px}
   .subtitle{color:var(--muted);font-size:13px}
   .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(6,20,40,0.06)}
-  .grid{display:grid;grid-template-columns:1fr 420px;gap:14px}
-  @media(max-width:980px){.grid{grid-template-columns:1fr}}
-  label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
-  input[type=text], input[type=password], select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #eef7ff;margin-top:6px}
-  input[type=file]{margin-top:6px}
-  textarea{min-height:90px;resize:vertical}
+  .layout{display:grid;grid-template-columns:1fr 360px;gap:14px}
+  @media (max-width:980px){.layout{grid-template-columns:1fr}}
+  .role{margin-bottom:12px}
+  .role h2{margin:8px 0;font-size:16px}
+  .hlist{display:flex;gap:10px;overflow:auto;padding:8px}
+  .card-candidate{min-width:150px;max-width:160px;background:linear-gradient(180deg,#fff,#10b70a);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(6,182,212,0.06)}
+  .avatar{width:84px;height:84px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:transparent;font-size:36px}
+  .cand-name{font-weight:800;text-align:center}
+  .vote-btn{width:100%;padding:10px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
+  .count{font-weight:900;margin-top:4px;display:none}
+  .aside .small{font-size:13px;color:var(--muted)}
+  .controls{display:flex;gap:8px;margin-top:12px}
   .btn{padding:9px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
   .btn.primary{background:var(--accent);color:#fff}
   .btn.ghost{background:transparent;border:2px solid #e6f7ff}
-  .list{margin-top:8px}
-  .item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f1f5f9}
-  .small{font-size:13px;color:var(--muted)}
-  .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;z-index:50}
-  .modal-card{width:100%;max-width:520px;background:var(--card);padding:14px;border-radius:12px;box-shadow:0 12px 36px rgba(8,24,44,0.08)}
-  .pin-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.45);z-index:9999}
-  .pin-box{background:#fff;padding:20px;border-radius:12px;min-width:320px;text-align:center}
-  .muted{color:var(--muted)}
-  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
-  .stat{background:#f8fbff;padding:10px;border-radius:8px;border:1px solid #eaf7ff}
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:14px;z-index:50}
+  .modal.open{display:flex}
+  .modal-card{width:100%;max-width:760px;background:var(--card);padding:14px;border-radius:12px;box-shadow:0 12px 36px rgba(8,24,44,0.08)}
+  label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
+  input[type=text], input[type=password], select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #eef7ff;margin-top:6px}
+  textarea{min-height:80px;resize:vertical}
+  .voter-badge{display:inline-flex;gap:8px;align-items:center;padding:8px;background:#f1fbff;border-radius:10px;border:1px solid #e6f7ff;font-weight:700}
+  .voter-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:380px;overflow:auto;padding-right:8px}
+  .voter-item{padding:8px 10px;border-radius:12px;background:#fff;border:1px solid #e8f7ff;cursor:pointer;display:flex;gap:12px;align-items:center}
+  .voter-avatar{width:40px;height:40px;border-radius:50%;flex:0 0 40px;overflow:hidden;display:inline-block}
+  .muted{color:var(--muted);font-size:13px}
   .results-table{width:100%;border-collapse:collapse;margin-top:8px}
   .results-table th,.results-table td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left}
+  #totalWrapper{display:none}
 
-  /* podium */
-  .podium-wrap{margin-top:12px;padding:12px;border-radius:12px;background:linear-gradient(180deg,#fff,#f7fffb);box-shadow:0 8px 20px rgba(6,20,40,0.04)}
-  .role-block{margin-top:12px}
-  .podium{display:flex;align-items:flex-end;justify-content:center;gap:14px;padding-top:12px}
-  .pod{width:140px;text-align:center;border-radius:10px;padding:8px}
-  .pod .avatar{width:84px;height:84px;border-radius:50%;margin:0 auto 6px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
-  .pod .name{font-weight:800}
-  .pod .percent{font-weight:700}
-  .pod-1{background:linear-gradient(90deg,#e6ffed,#f0fff6);border:3px solid #0f9d58;padding-bottom:8px}
-  .pod-2{background:linear-gradient(90deg,#fffce6,#fff9f0);border:3px solid #f4b400;padding-bottom:8px}
-  .pod-3{background:linear-gradient(90deg,#fff1f0,#fff7f7);border:3px solid #db4437;padding-bottom:8px}
-  .podion-ribbon{font-size:12px;margin-bottom:6px}
-  .avatar img{width:100%;height:100%;object-fit:cover}
-
+  canvas#confetti{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:9999}
+  .emoji-float{position:fixed;z-index:10000;pointer-events:none;font-size:28px;opacity:0;transform:translateY(0);transition:transform 1s,opacity 1s}
+  .envelope-fly{position:fixed;z-index:12000;width:48px;height:34px;pointer-events:none;transform:translateY(0) scale(1);opacity:0;transition:transform 900ms cubic-bezier(.22,.9,.33,1), opacity 900ms ease;}
+  .envelope-fly.show{ opacity:1; transform:translateY(-220px) scale(1.05); }
+  .toast{position:fixed;right:18px;bottom:18px;background:rgba(6,20,40,0.95);color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(6,20,40,0.2);z-index:13000;opacity:0;transform:translateY(12px);transition:opacity 300ms, transform 300ms;font-weight:700;font-size:13px;}
+  .toast.show{ opacity:1; transform:translateY(0); }
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
+<canvas id="confetti"></canvas>
+
+<div class="container card">
+  <header style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
     <div class="logo">PE</div>
     <div>
-      <h1>Admin — Parlement des Enfants</h1>
-      <div class="subtitle">Gérer candidats, électeurs et résultats (Firestore)</div>
+      <h1>Parlement des Enfants — Vote 2025</h1>
+      <div class="subtitle">Président, Vice-Président, Secrétaire Général, Rapporteur & Secrétaire — République du Congo</div>
     </div>
   </header>
 
-  <div class="grid">
-    <div class="card">
-      <h3>Ajouter un candidat</h3>
-      <label>Nom</label>
-      <input id="candName" type="text" placeholder="Ex: Aminata" />
-      <label>Emoji (optionnel)</label>
-      <input id="candEmoji" type="text" placeholder="Ex: 🧑‍🎓" />
-      <label>Rôle</label>
-      <select id="candRole">
-        <option value="pres">Président</option>
-        <option value="vice">Vice-Président</option>
-        <option value="sec">Secrétaire Général</option>
-        <option value="rapporteur">Rapporteur</option>
-        <option value="secretaire">Secrétaire chargé.e de la Citoyenneté</option>
-      </select>
-      <label>Photo (optionnel)</label>
-      <input id="candPhoto" type="file" accept="image/*" />
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-        <button id="addCandidate" class="btn primary">Ajouter candidat</button>
-      </div>
+  <section style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div id="selectedVoter" class="voter-badge">Aucun électeur sélectionné</div>
+    <div><button type="button" class="btn ghost" id="openVoterPicker">Sélectionner électeur</button></div>
+  </section>
 
-      <hr />
+  <section class="role">
+    <h2>Président</h2>
+    <div class="hlist" id="presList" aria-live="polite"></div>
+  </section>
 
-      <h3>Ajouter un électeur</h3>
-      <label>Nom</label>
-      <input id="voterName" type="text" placeholder="Ex: Koffi" />
-      <label>Emoji (optionnel)</label>
-      <input id="voterEmoji" type="text" placeholder="Ex: 😀" />
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-        <button id="addVoter" class="btn primary">Ajouter électeur</button>
-      </div>
+  <section class="role">
+    <h2>Vice-Président</h2>
+    <div class="hlist" id="vpList" aria-live="polite"></div>
+  </section>
 
-      <hr />
+  <section class="role">
+    <h2>Secrétaire Général</h2>
+    <div class="hlist" id="secList" aria-live="polite"></div>
+  </section>
 
-      <h3>Ajouter plusieurs électeurs (une ligne = un nom)</h3>
-      <textarea id="bulkVoters" placeholder="Koffi
-Amina
-..."></textarea>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-        <button id="bulkAddVoters" class="btn ghost">Ajouter en masse</button>
-      </div>
+  <section class="role">
+    <h2>Rapporteur</h2>
+    <div class="hlist" id="rapportList" aria-live="polite"></div>
+  </section>
 
-      <hr />
+  <section class="role">
+    <h2>Secrétaire chargé.e de la Citoyenneté</h2>
+    <div class="hlist" id="secretaireList" aria-live="polite"></div>
+  </section>
 
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-        <button id="resetVotes" class="btn ghost">Réinitialiser votes</button>
-        <button id="exportJson" class="btn ghost">Exporter JSON</button>
-      </div>
-
-      <div class="small" style="margin-top:10px">Actions protégées par PIN (cette page te demande le PIN au chargement).</div>
-    </div>
-
-    <aside class="card">
-      <h3>Tableau de bord</h3>
-      <div class="stats">
-        <div class="stat"><strong id="statCandidates">0</strong><div class="small">Candidats</div></div>
-        <div class="stat"><strong id="statVoters">0</strong><div class="small">Électeurs</div></div>
-        <div class="stat"><strong id="statVotes">0</strong><div class="small">Votes</div></div>
-      </div>
-
-      <h4 style="margin-top:12px">Liste candidats (sélectionnable)</h4>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-        <select id="candidatesDropdown" style="flex:1;padding:8px;border-radius:8px;border:1px solid #eef7ff"></select>
-        <button id="deleteSelectedCandidate" class="btn ghost" title="Supprimer le candidat sélectionné">Suppr</button>
-      </div>
-
-      <h4 style="margin-top:12px">Liste électeurs (sélectionnable)</h4>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-        <select id="votersDropdown" style="flex:1;padding:8px;border-radius:8px;border:1px solid #eef7ff"></select>
-        <button id="deleteSelectedVoter" class="btn ghost" title="Supprimer l'électeur sélectionné">Suppr</button>
-      </div>
-
-      <h4 style="margin-top:14px">Podium — par rôle</h4>
-      <div id="podiumContainer" class="podium-wrap"></div>
-
-    </aside>
-  </div>
+  <div style="margin-top:10px" class="small">Conseils : sélectionne d'abord ton nom, puis appuie sur "Voter". Chaque électeur peut voter une fois par rôle.</div>
+  <hr style="margin:12px 0">
+  <div id="totalWrapper"><strong>Total votes: <span id="total">0</span></strong> — <span id="last">—</span></div>
+  <footer style="margin-top:12px">Design • Simple & real-time (Firestore)</footer>
 </div>
 
-<!-- PIN overlay shown until admin authenticates -->
-<div id="pinOverlay" class="pin-overlay">
-  <div class="pin-box">
-    <h3>Code administrateur requis</h3>
-    <input id="pinInput" type="password" placeholder="Entrer le code admin" style="padding:8px;border-radius:8px;border:1px solid #eee;width:100%;box-sizing:border-box;margin-top:10px" />
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
-      <button id="pinCancel" class="btn ghost">Fermer</button>
-      <button id="pinSubmit" class="btn primary">Valider</button>
+<div id="voterModal" class="modal" aria-hidden="true">
+  <div class="modal-card">
+    <h3>Sélectionner l'électeur</h3>
+    <div class="small">Tape sur le nom de l'électeur.</div>
+    <div id="voterList" class="voter-list"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button type="button" class="btn ghost" id="closeVoterPicker">Fermer</button>
     </div>
-    <div class="small" style="margin-top:8px">Par défaut le PIN est <code>1234</code> — change-le dans le code avant déploiement.</div>
   </div>
 </div>
 
@@ -159,10 +116,8 @@ Amina
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-  'use strict';
-  // === CONFIGURE FIREBASE (remplace par ta config) ===
-  const firebaseConfig = {
+/* ====== CONFIGURE FIREBASE ====== */
+const firebaseConfig = {
     apiKey: "AIzaSyA_cdwwXT6DRcEm-555RxXETZ0Pwnv0bcQ",
     authDomain: "parlementvotesystemv1.firebaseapp.com",
     projectId: "parlementvotesystemv1",
@@ -171,219 +126,238 @@ document.addEventListener('DOMContentLoaded', function(){
     appId: "1:1014390957615:web:2ced35e18d4236451488da",
     measurementId: "G-J8VSKCE3M8"
   };
-  
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
 
-  const ADMIN_PIN = '0323';
-  const ROLES = ['pres','vice','sec','rapporteur','secretaire'];
-  const ROLE_LABEL = { pres:'Président', vice:'Vice-Président', sec:'Secrétaire Général', rapporteur:'Rapporteur', secretaire:'Secrétaire chargé.e de la Citoyenneté' };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const FieldValue = firebase.firestore.FieldValue;
 
-  // DOM refs
-  const pinOverlay = document.getElementById('pinOverlay');
-  const pinInput = document.getElementById('pinInput');
-  const pinSubmit = document.getElementById('pinSubmit');
-  const pinCancel = document.getElementById('pinCancel');
-
-  const candName = document.getElementById('candName');
-  const candEmoji = document.getElementById('candEmoji');
-  const candRole = document.getElementById('candRole');
-  const candPhoto = document.getElementById('candPhoto');
-  const addCandidate = document.getElementById('addCandidate');
-
-  const voterName = document.getElementById('voterName');
-  const voterEmoji = document.getElementById('voterEmoji');
-  const addVoter = document.getElementById('addVoter');
-
-  const bulkVoters = document.getElementById('bulkVoters');
-  const bulkAddVoters = document.getElementById('bulkAddVoters');
-
-  const resetVotes = document.getElementById('resetVotes');
-  const exportJson = document.getElementById('exportJson');
-
-  const statCandidates = document.getElementById('statCandidates');
-  const statVoters = document.getElementById('statVoters');
-  const statVotes = document.getElementById('statVotes');
-
-  const candidatesDropdown = document.getElementById('candidatesDropdown');
-  const deleteSelectedCandidate = document.getElementById('deleteSelectedCandidate');
-  const votersDropdown = document.getElementById('votersDropdown');
-  const deleteSelectedVoter = document.getElementById('deleteSelectedVoter');
-
-  const podiumContainer = document.getElementById('podiumContainer');
-
-  // helpers
-  function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
-function splitLines(text){ return (''+(text||'')).split(/\r?\n/).map(l=>l.trim()).filter(Boolean); }
-
-  function lockAdmin(){ pinOverlay.style.display = 'flex'; }
-  function unlockAdmin(){ pinOverlay.style.display = 'none'; startRealtimeListeners(); }
-
-  pinCancel.addEventListener('click', function(){ alert('Accès admin annulé'); });
-  pinSubmit.addEventListener('click', function(){ const val = (pinInput && pinInput.value||'').trim(); if(val === ADMIN_PIN){ unlockAdmin(); } else { alert('PIN invalide'); } });
-
-  // firestore ops
-  async function addCandidateToFirestore(name, emoji, role, photoDataUrl){
-    await db.collection('candidates').add({ name, emoji: emoji||'', role: role||'pres', photo: photoDataUrl||'', createdAt: new Date().toISOString() });
+/* ====== Utilities (confetti, avatars, ballots, envelope, toast) - unchanged logic ====== */
+const canvas = document.getElementById('confetti');
+const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+function resizeCanvas(){ if(!canvas) return; canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas); resizeCanvas();
+let confetti = [], confettiRunning = false;
+function spawnConfettiAt(x,y){
+  if(!ctx) return;
+  const colors = ['#1c8a00','#f7d117','#d91f2a','#3b82f6','#a78bfa'];
+  for(let i=0;i<30;i++){
+    confetti.push({ x: x + (Math.random()*40-20), y: y + (Math.random()*20-10), vx: (Math.random()-0.5)*6, vy: (Math.random()*-7)-2, life: 50 + Math.random()*40, size: 6 + Math.random()*6, color: colors[Math.floor(Math.random()*colors.length)] });
   }
-  async function addVoterToFirestore(name, emoji){ await db.collection('voters').add({ name, emoji: emoji||'', createdAt: new Date().toISOString() }); }
-
-  addCandidate.addEventListener('click', async ()=>{
-    const name = (candName.value||'').trim(); if(!name){ alert('Entrez le nom du candidat'); return; }
-    const emoji = candEmoji.value||''; const role = candRole.value||'pres';
-    // handle optional photo
-    if(candPhoto && candPhoto.files && candPhoto.files[0]){
-      const f = candPhoto.files[0]; const reader = new FileReader(); reader.onload = async function(e){ const dataUrl = e.target.result; try{ await addCandidateToFirestore(name, emoji, role, dataUrl); candName.value=''; candEmoji.value=''; candPhoto.value=''; alert('Candidat ajouté'); }catch(er){ console.error(er); alert('Erreur ajout candidat'); } };
-      reader.readAsDataURL(f);
-    } else {
-      try{ await addCandidateToFirestore(name, emoji, role, ''); candName.value=''; candEmoji.value=''; alert('Candidat ajouté'); }catch(e){ console.error(e); alert('Erreur ajout candidat'); }
+  if(!confettiRunning) runConfetti();
+}
+function runConfetti(){
+  if(!ctx) return;
+  confettiRunning = true;
+  (function loop(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let i=confetti.length-1;i>=0;i--){
+      const p = confetti[i];
+      p.x += p.vx; p.y += p.vy; p.vy += 0.35; p.life--;
+      ctx.fillStyle = p.color; ctx.fillRect(p.x,p.y,p.size,p.size);
+      if(p.life <= 0 || p.y > canvas.height + 50) confetti.splice(i,1);
     }
-  });
-
-  addVoter.addEventListener('click', async ()=>{
-    const name = (voterName.value||'').trim(); if(!name){ alert('Entrez le nom de l\'électeur'); return; }
-    try{ await addVoterToFirestore(name, (voterEmoji.value||'')); voterName.value=''; voterEmoji.value=''; alert('Électeur ajouté'); }catch(e){ console.error(e); alert('Erreur ajout électeur'); }
-  });
-
-  bulkAddVoters.addEventListener('click', async ()=>{
-    const names = splitLines(bulkVoters.value||''); if(!names.length){ alert('Collez au moins un nom'); return; }
-    try{
-      const batch = db.batch();
-      names.forEach(n=>{ const ref = db.collection('voters').doc(); batch.set(ref, { name: n, emoji: '', createdAt: new Date().toISOString() }); });
-      await batch.commit(); bulkVoters.value=''; alert(names.length+' électeur(s) ajouté(s)');
-    }catch(e){ console.error(e); alert('Erreur ajout en masse'); }
-  });
-
-  exportJson.addEventListener('click', async ()=>{
-    try{
-      const out={candidates:[],voters:[],votes:[]};
-      const [cands,vots,vtrs] = await Promise.all([db.collection('candidates').get(), db.collection('votes').get(), db.collection('voters').get()]);
-      cands.forEach(d=>out.candidates.push(Object.assign({id:d.id}, d.data())));
-      vtrs.forEach(d=>out.voters.push(Object.assign({id:d.id}, d.data())));
-      vots.forEach(d=>out.votes.push(Object.assign({id:d.id}, d.data())));
-      const blob = new Blob([JSON.stringify(out,null,2)],{type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='parlement_export.json'; a.click(); URL.revokeObjectURL(url);
-    }catch(e){ console.error(e); alert('Erreur export'); }
-  });
-
-  resetVotes.addEventListener('click', async ()=>{
-    if(!confirm('Remettre tous les compteurs à zéro ?')) return;
-    try{
-      // delete votes in batches
-      const delBatch = async ()=>{
-        const snap = await db.collection('votes').limit(300).get(); if(snap.empty) return; const batch = db.batch(); snap.forEach(d=>batch.delete(d.ref)); await batch.commit(); await delBatch(); };
-      await delBatch();
-      // reset candidate votes
-      const cands = await db.collection('candidates').get(); const batch = db.batch(); cands.forEach(d=>batch.update(d.ref, { votes: 0 })); await batch.commit(); alert('Réinitialisé');
-    }catch(e){ console.error(e); alert('Erreur réinitialisation'); }
-  });
-
-  async function deleteCandidate(cid){ if(!confirm('Supprimer ce candidat et ses votes ?')) return; try{ const delByCandidate = async ()=>{ const snap = await db.collection('votes').where('candidateId','==',cid).limit(300).get(); if(snap.empty) return; const batch = db.batch(); snap.forEach(d=>batch.delete(d.ref)); await batch.commit(); await delByCandidate(); }; await delByCandidate(); await db.collection('candidates').doc(cid).delete(); alert('Candidat supprimé'); }catch(e){ console.error(e); alert('Erreur suppression candidat'); } }
-
-  async function deleteVoter(vid){ if(!confirm('Supprimer cet électeur et ses votes ?')) return; try{ const delByVoter = async ()=>{ const snap = await db.collection('votes').where('voterId','==',vid).limit(300).get(); if(snap.empty) return; const batch = db.batch(); snap.forEach(d=>batch.delete(d.ref)); await batch.commit(); await delByVoter(); }; await delByVoter(); await db.collection('voters').doc(vid).delete(); alert('Électeur supprimé'); }catch(e){ console.error(e); alert('Erreur suppression électeur'); } }
-
-  deleteSelectedVoter.addEventListener('click', async ()=>{ const opt = votersDropdown.options[votersDropdown.selectedIndex]; if(!opt){ alert('Aucun électeur sélectionné'); return; } const id = opt.value; await deleteVoter(id); });
-  deleteSelectedCandidate.addEventListener('click', async ()=>{ const opt = candidatesDropdown.options[candidatesDropdown.selectedIndex]; if(!opt){ alert('Aucun candidat sélectionné'); return; } const id = opt.value; await deleteCandidate(id); });
-
-  // podium helpers — use candidate.photo if present else generate child avatar
-  function childAvatarDataUrl(seed){ const colors = ['#704214','#4b2e83','#2b4f77','#5a3c2b']; const c = colors[Math.abs(hashCode(seed||'a')) % colors.length]; const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'>"+
-      "<rect width='120' height='120' rx='60' fill='%23fff'/>"+
-      "<g transform='translate(0,42)'>"+
-        "<path d='M0,40 L120,40 L120,70 L0,70 Z' fill='%23eee'/>"+
-        "<polygon points='0,40 120,0 120,20 0,60' fill='%2308a200'/>"+
-        "<polygon points='0,60 120,20 120,40 0,80' fill='%23f7d117'/>"+
-        "<polygon points='0,80 120,40 120,60 0,100' fill='%23d91f2a'/>"+
-      "</g>"+
-      "<circle cx='60' cy='44' r='28' fill='%23f6d6b8'/>"+
-      "<path d='M42,44 Q60,30 78,44' fill='"+c+"'/>"+
-      "<circle cx='50' cy='48' r='3' fill='%230b2b3a'/>"+
-      "<circle cx='70' cy='48' r='3' fill='%230b2b3a'/>"+
-      "<path d='M50,58 Q60,66 70,58' stroke='%230b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/>"+
-      "</svg>";
-    return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+    if(confetti.length>0) requestAnimationFrame(loop); else confettiRunning=false;
+  })();
+}
+function floatEmojiAt(x,y){
+  const emojis=['🎉','✨','🎈','👏','🥳','🎊'];
+  for(let i=0;i<6;i++){
+    const el=document.createElement('div'); el.className='emoji-float'; el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    document.body.appendChild(el);
+    const offsetX = (Math.random()*80 - 40);
+    el.style.left = (x + offsetX) + 'px';
+    el.style.top = (y + (Math.random()*40 - 10)) + 'px';
+    requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateY(-130px) scale(1.15)'; });
+    setTimeout(()=>{ el.style.opacity='0'; try{ el.remove(); }catch(e){} }, 1400);
   }
-  function hashCode(str){ let h=0; for(let i=0;i<str.length;i++){ h = ((h<<5)-h) + str.charCodeAt(i); h |= 0; } return h; }
+}
+function seededRandom(seed) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seed.length; i++){ h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return function(){ h += 0x6D2B79F5; let t = Math.imul(h ^ (h >>> 15), 1 | h); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function childAvatarDataUrl(seed){
+  const rnd = seededRandom(seed || String(Math.random()));
+  const skinTones=['#f6d6b8','#f0c8a0','#e6b38a','#d39a6c','#b58155'];
+  const scarfColors=['#08a200','#f7d117','#d91f2a','#3b82f6','#a78bfa'];
+  const hairColors=['#1f2937','#3b2f2f','#6b4423','#2f1b0b'];
+  const bg=['#ffffff','#fffaf0','#f7fff9','#f0f8ff'][Math.floor(rnd()*4)];
+  const skin=skinTones[Math.floor(rnd()*skinTones.length)];
+  const scarf=scarfColors[Math.floor(rnd()*scarfColors.length)];
+  const hair=hairColors[Math.floor(rnd()*hairColors.length)];
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><rect width='120' height='120' rx='20' fill='${bg}'/><g transform='translate(10,10)'><circle cx='50' cy='40' r='28' fill='${skin}'/><circle cx='40' cy='36' r='3' fill='#0b2b3a'/><circle cx='60' cy='36' r='3' fill='#0b2b3a'/><path d='M40,48 Q50,56 60,48' stroke='#0b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/><path d='M22,32 Q42,18 78,28 Q62,18 38,22 Z' fill='${hair}' opacity='0.95'/><g transform='translate(0,72)'><rect x='0' y='0' width='120' height='18' fill='${scarf}'/><rect x='0' y='0' width='40' height='18' fill='#f7d117'/><rect x='80' y='0' width='40' height='18' fill='#08a200'/></g></g></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+function ballotBoxSvg(candidateId){
+  const rnd = seededRandom(String(candidateId || Math.random()));
+  const colors = ['#08a200','#f7d117','#d91f2a'];
+  const color = colors[Math.floor(rnd()*colors.length)];
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'><rect x='4' y='18' width='76' height='52' rx='8' fill='${color}' stroke='#0b2b3a' stroke-width='2' /><rect x='12' y='6' width='60' height='18' rx='6' fill='#ffffff' stroke='#0b2b3a' stroke-width='1.5' /><rect x='22' y='22' width='40' height='8' rx='2' fill='#fff' opacity='0.6' /><rect x='30' y='28' width='24' height='4' rx='2' fill='#0b2b3a' /><rect x='28' y='14' width='28' height='8' rx='1.5' fill='#fff' transform='rotate(-8 42 18)' opacity='0.95' /></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+function animateEnvelopeAt(x,y){
+  const el = document.createElement('div'); el.className='envelope-fly';
+  el.innerHTML = `<svg width="48" height="34" viewBox="0 0 48 34" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="34" rx="4" fill="#fff" stroke="#0b2b3a" /><polyline points="4,6 24,20 44,6" fill="none" stroke="#0b2b3a" stroke-width="1.4" /></svg>`;
+  document.body.appendChild(el); el.style.left = (x - 24) + 'px'; el.style.top = (y - 16) + 'px';
+  requestAnimationFrame(()=> el.classList.add('show'));
+  setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 1100);
+}
+function showToast(text, ttl=2200){
+  const t = document.createElement('div'); t.className='toast'; t.textContent = text; document.body.appendChild(t);
+  requestAnimationFrame(()=> t.classList.add('show'));
+  setTimeout(()=> { t.classList.remove('show'); setTimeout(()=>{ try{ t.remove(); }catch(e){} },300); }, ttl);
+}
 
-  function makePodiumHtmlForRole(role){
-    const id = 'pod_'+role;
-    return `
-      <div class="role-block" id="${id}">
-        <strong>${ROLE_LABEL[role]||role}</strong>
-        <div class="podium" data-role="${role}">
-          <div class="pod pod-2" data-pos="2">
-            <div class="podion-ribbon">2</div>
-            <div class="avatar" data-avatar="${role}_2"></div>
-            <div class="name" data-name="${role}_2">—</div>
-            <div class="percent" data-pct="${role}_2">0%</div>
-          </div>
-          <div class="pod pod-1" data-pos="1">
-            <div class="podion-ribbon">1</div>
-            <div class="avatar" data-avatar="${role}_1"></div>
-            <div class="name" data-name="${role}_1">—</div>
-            <div class="percent" data-pct="${role}_1">0%</div>
-          </div>
-          <div class="pod pod-3" data-pos="3">
-            <div class="podion-ribbon">3</div>
-            <div class="avatar" data-avatar="${role}_3"></div>
-            <div class="name" data-name="${role}_3">—</div>
-            <div class="percent" data-pct="${role}_3">0%</div>
-          </div>
-        </div>
-      </div>
-    `;
+/* ====== Firestore + UI logic ====== */
+function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
+const presList = document.getElementById('presList');
+const vpList = document.getElementById('vpList');
+const secList = document.getElementById('secList');
+const rapportList = document.getElementById('rapportList');
+const secretaireList = document.getElementById('secretaireList');
+const totalEl = document.getElementById('total');
+const openVoterPicker = document.getElementById('openVoterPicker');
+const voterModal = document.getElementById('voterModal');
+let voterListEl = document.getElementById('voterList'); // we'll re-query if needed
+const closeVoterPicker = document.getElementById('closeVoterPicker');
+const selectedVoterEl = document.getElementById('selectedVoter');
+
+let selectedVoter = null;
+let unsubscribeCandidates = null;
+let unsubscribeVotes = null;
+let unsubscribeVoters = null;
+
+function startRealtime(){
+  if(!db){ console.error('Firestore non initialisé'); return; }
+  if(unsubscribeCandidates) unsubscribeCandidates();
+  unsubscribeCandidates = db.collection('candidates').orderBy('role').onSnapshot(snap => {
+    const buckets = { pres: [], vice: [], sec: [], rapporteur: [], secretaire: [] };
+    snap.forEach(doc => {
+      const d = Object.assign({ id: doc.id }, doc.data());
+      let role = (d.role||'pres').toString();
+      let roleNorm = role.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+      if ( roleNorm === 'secretaire' || roleNorm.includes('citoy') || roleNorm.includes('charg') || roleNorm.includes('citoyenn') ) {
+        buckets.secretaire.push(d);
+      } else if ( roleNorm === 'sec' || roleNorm.includes('secretaire general') || roleNorm.includes('secretairegeneral') || roleNorm.includes('general') || roleNorm.includes('secretaire_g') ) {
+        buckets.sec.push(d);
+      } else if(roleNorm === 'vice' || roleNorm.includes('vice')) {
+        buckets.vice.push(d);
+      } else if(roleNorm === 'rapporteur' || roleNorm.includes('rapport')) {
+        buckets.rapporteur.push(d);
+      } else {
+        buckets.pres.push(d);
+      }
+    });
+    renderCandidates(buckets);
+  });
+
+  if(unsubscribeVotes) unsubscribeVotes();
+  unsubscribeVotes = db.collection('votes').orderBy('ts','desc').onSnapshot(snap => {
+    if(totalEl) totalEl.textContent = snap.size;
+  });
+}
+
+function renderCandidates(buckets){
+  if(presList) presList.innerHTML=''; if(vpList) vpList.innerHTML=''; if(secList) secList.innerHTML=''; if(rapportList) rapportList.innerHTML=''; if(secretaireList) secretaireList.innerHTML='';
+  (buckets.pres||[]).forEach(c => presList.appendChild(makeCard(c)));
+  (buckets.vice||[]).forEach(c => vpList.appendChild(makeCard(c)));
+  (buckets.sec||[]).forEach(c => secList.appendChild(makeCard(c)));
+  (buckets.rapporteur||[]).forEach(c => rapportList.appendChild(makeCard(c)));
+  (buckets.secretaire||[]).forEach(c => secretaireList.appendChild(makeCard(c)));
+}
+
+function makeCard(candidate){
+  const card = document.createElement('div'); card.className='card-candidate';
+  const avatar = document.createElement('div'); avatar.className='avatar';
+  const img = document.createElement('img');
+  img.src = ballotBoxSvg(candidate.id || uid('c'));
+  img.width = 84; img.height = 84; img.alt = 'boite de vote';
+  img.style.width = '84px'; img.style.height = '84px'; img.style.display = 'block';
+  avatar.appendChild(img);
+  const name = document.createElement('div'); name.className='cand-name'; name.textContent = candidate.name || '—';
+  const btn = document.createElement('button'); btn.type='button'; btn.className='vote-btn'; btn.textContent='Voter';
+  const count = document.createElement('div'); count.className='count'; count.textContent = (candidate.votes||0);
+  btn.addEventListener('click', (e)=> voteCandidate(candidate, e.currentTarget));
+  card.appendChild(avatar); card.appendChild(name); card.appendChild(btn); card.appendChild(count);
+  return card;
+}
+
+async function voteCandidate(candidate, btnElem){
+  if(!selectedVoter){ alert("Veuillez d'abord sélectionner votre nom."); return; }
+  const role = (candidate.role || 'pres').toLowerCase();
+  try{
+    const q = await db.collection('votes').where('voterId','==', selectedVoter.id).where('role','==', role).limit(1).get();
+    if(!q.empty){ alert("Cet électeur a déjà voté pour ce rôle."); return; }
+    const voteRef = db.collection('votes').doc();
+    const candRef = db.collection('candidates').doc(candidate.id);
+    await db.runTransaction(async (t)=>{
+      t.set(voteRef, { voterId: selectedVoter.id, voterName: selectedVoter.name, candidateId: candidate.id, candidateName: candidate.name, role, ts: new Date().toISOString() });
+      t.update(candRef, { votes: FieldValue.increment(1) });
+    });
+    try{
+      const rect = btnElem.getBoundingClientRect();
+      const x = rect.left + rect.width/2;
+      const y = rect.top + rect.height/2;
+      animateEnvelopeAt(x,y);
+      spawnConfettiAt(x,y);
+      floatEmojiAt(x,y);
+    }catch(e){ console.warn('animation position failed', e); }
+    showToast('Vote enregistré — merci !');
+  }catch(err){
+    console.error('vote error', err);
+    alert('Erreur lors du vote : ' + (err.message || err));
   }
+}
 
-  function updatePodiumForRole(role, candidates){
-    const sorted = (candidates||[]).slice().sort((a,b)=> (b.votes||0) - (a.votes||0));
-    const total = (candidates||[]).reduce((s,c)=>s+(c.votes||0),0) || 0;
-    const top1 = sorted[0]||null, top2 = sorted[1]||null, top3 = sorted[2]||null;
-    const set = (slot, cand)=>{
-      const avatarEl = podiumContainer.querySelector('[data-avatar="'+role+'_'+slot+'"]');
-      const nameEl = podiumContainer.querySelector('[data-name="'+role+'_'+slot+'"]');
-      const pctEl = podiumContainer.querySelector('[data-pct="'+role+'_'+slot+'"]');
-      if(!nameEl || !pctEl) return;
-      if(!cand){ if(avatarEl) avatarEl.innerHTML=''; nameEl.textContent='—'; pctEl.textContent='0%'; return; }
-      const url = (cand.photo && cand.photo.length>10) ? cand.photo : childAvatarDataUrl(cand.name || cand.id);
-      if(avatarEl) avatarEl.innerHTML = '<img src="'+url+'" alt="avatar">';
-      nameEl.textContent = cand.name || '—';
-      const pct = total? Math.round((cand.votes||0)/total*100) : 0; pctEl.textContent = pct + '%';
-    };
-    set(1, top1); set(2, top2); set(3, top3);
-  }
-
-  // realtime listeners
-  let unsubCandidates=null, unsubVoters=null, unsubVotes=null;
-  function startRealtimeListeners(){
-    if(unsubCandidates) unsubCandidates(); if(unsubVoters) unsubVoters(); if(unsubVotes) unsubVotes();
-
-    // build podiumContainer html (once)
-    podiumContainer.innerHTML = '';
-    ROLES.forEach(r=>{ podiumContainer.insertAdjacentHTML('beforeend', makePodiumHtmlForRole(r)); });
-
-    unsubCandidates = db.collection('candidates').onSnapshot(snap=>{
-      // populate dropdown
-      candidatesDropdown.innerHTML = '';
-      const allCands = [];
-      snap.forEach(d=>{ const c = Object.assign({ id:d.id }, d.data()); allCands.push(c); const opt = document.createElement('option'); opt.value = c.id; opt.textContent = (c.emoji? c.emoji+' ':'') + (c.name||'—') + ' ('+(ROLE_LABEL[c.role]||c.role)+')'; candidatesDropdown.appendChild(opt); });
-      statCandidates.textContent = snap.size;
-      // update podium per role
-      ROLES.forEach(role=>{
-        const filtered = allCands.filter(x=> (x.role||'pres') === role);
-        updatePodiumForRole(role, filtered);
+/* ====== voter picker (now real-time while modal open) ====== */
+openVoterPicker && openVoterPicker.addEventListener('click', ()=> {
+  if(!voterListEl) voterListEl = document.getElementById('voterList');
+  if(!voterListEl){ alert('Impossible d\'ouvrir la liste des électeurs (élément introuvable).'); return; }
+  voterModal.classList.add('open'); voterModal.setAttribute('aria-hidden','false');
+  // unsubscribe previous if any
+  if(unsubscribeVoters) { try{ unsubscribeVoters(); }catch(e){} unsubscribeVoters = null; }
+  // guard Firestore
+  if(!db){ voterListEl.innerHTML = '<div class="muted">Erreur: Firestore non initialisé.</div>'; return; }
+  voterListEl.innerHTML = '<div class="muted">Chargement...</div>';
+  unsubscribeVoters = db.collection('voters').orderBy('name').onSnapshot(snap => {
+    try{
+      voterListEl.innerHTML = '';
+      if(snap.empty){ const p = document.createElement('div'); p.className='muted'; p.textContent='Aucun électeur disponible.'; voterListEl.appendChild(p); return; }
+      snap.forEach(doc => {
+        const v = Object.assign({ id: doc.id }, doc.data());
+        const it = document.createElement('div'); it.className='voter-item';
+        const imgWrap = document.createElement('div'); imgWrap.className='voter-avatar';
+        const img = document.createElement('img'); img.src = childAvatarDataUrl(v.id); img.width = 40; img.height = 40; img.style.display='block'; img.style.width='40px'; img.style.height='40px'; img.style.objectFit='cover';
+        imgWrap.appendChild(img); it.appendChild(imgWrap);
+        const s = document.createElement('strong'); s.textContent = v.name || '—'; it.appendChild(s);
+        it.addEventListener('click', ()=> {
+          selectedVoter = { id: v.id, name: v.name, emoji: v.emoji || '' };
+          selectedVoterEl.textContent = (v.emoji?v.emoji+' ':'') + (v.name||'—');
+          // close modal and unsubscribe voter listener
+          voterModal.classList.remove('open'); voterModal.setAttribute('aria-hidden','true');
+          if(unsubscribeVoters){ try{ unsubscribeVoters(); }catch(e){} unsubscribeVoters = null; }
+        });
+        voterListEl.appendChild(it);
       });
-    });
-
-    unsubVoters = db.collection('voters').onSnapshot(snap=>{
-      votersDropdown.innerHTML = '';
-      snap.forEach(d=>{ const v = Object.assign({ id:d.id }, d.data()); const opt = document.createElement('option'); opt.value = v.id; opt.textContent = (v.emoji? v.emoji+' ':'') + (v.name||'—'); votersDropdown.appendChild(opt); });
-      statVoters.textContent = snap.size;
-    });
-
-    unsubVotes = db.collection('votes').onSnapshot(snap=>{ statVotes.textContent = snap.size; });
-  }
-
-  lockAdmin();
-  window.__admin_db = db; // debug
+    }catch(e){
+      console.error('render voters snapshot error', e);
+      voterListEl.innerHTML = '<div class="muted">Erreur affichage électeurs</div>';
+    }
+  }, err => {
+    console.error('voters onSnapshot error', err);
+    voterListEl.innerHTML = '<div class="muted">Erreur chargement électeurs</div>';
+    showToast('Erreur chargement électeurs', 2500);
+  });
 });
+
+closeVoterPicker && closeVoterPicker.addEventListener('click', ()=> {
+  voterModal.classList.remove('open'); voterModal.setAttribute('aria-hidden','true');
+  if(unsubscribeVoters){ try{ unsubscribeVoters(); }catch(e){} unsubscribeVoters = null; }
+});
+
+/* ====== start listeners ====== */
+startRealtime();
+
 </script>
 </body>
 </html>
