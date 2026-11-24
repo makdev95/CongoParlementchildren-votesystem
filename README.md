@@ -11,6 +11,7 @@ Hébergée sur Netlify · base de données Firebase Firestore (SDK modulaire v12
 | `index.html` | Accueil : présentation, chiffres en direct, postes, droits de l'enfant |
 | `vote.html` | Bureau de vote (borne) : choix de l'électeur par département, vote par poste avec confirmation |
 | `podium.html` | Résultats en direct : podiums, classements, participation par département, mode projection |
+| `historique.html` | Historique des Bureaux : élus et résultats complets de chaque édition |
 | `admin.html` | Espace organisateurs (connexion obligatoire) : candidats, électeurs, résultats détaillés, exports |
 
 Raccourcis : `/voter` → page de vote, `/resultats` → résultats.
@@ -38,6 +39,17 @@ les règles Firestore en mode test avaient expiré.
 3. **Domaine autorisé** — *Authentication* → *Settings* → *Authorized domains* : vérifier que
    `parlementenfantvote.netlify.app` figure dans la liste (ajoutez aussi l'URL de prévisualisation Netlify pour tester).
 4. Se connecter sur `admin.html`, vérifier les candidats et compléter le **département** des électeurs.
+
+## Éditions et historique
+
+Chaque élection est une **édition** (ex. `2025`, `2026`). Candidats, électeurs et bulletins portent un
+champ `edition` ; le document `settings/election` indique l'édition en cours (`currentEdition`) et la liste
+des éditions. Les pages Vote, Résultats et Accueil n'affichent que l'édition en cours ; `historique.html`
+présente le Bureau élu et les résultats complets de chaque édition. Le vote est fermé pour les éditions archivées.
+
+- **Première fois** : Admin → onglet *Éditions* → « Archiver et ouvrir la nouvelle édition ».
+  Les données existantes (sans édition) sont rangées dans l'édition archivée. Rien n'est supprimé.
+- **Élections suivantes** : Admin → *Éditions* → « Ouvrir une nouvelle édition » (option : reprendre la liste des électeurs).
 
 ## Mode démonstration
 

@@ -36,6 +36,7 @@
 <div class="admin-layout" id="adminView" hidden>
   <aside class="admin-side" role="tablist" aria-label="Sections d'administration">
     <button class="tab" role="tab" data-tab="overview" aria-selected="true">📊 Vue d'ensemble</button>
+    <button class="tab" role="tab" data-tab="editions" aria-selected="false">📅 Éditions</button>
     <button class="tab" role="tab" data-tab="candidates" aria-selected="false">⭐ Candidat·es</button>
     <button class="tab" role="tab" data-tab="voters" aria-selected="false">🧒🏾 Électeurs</button>
     <button class="tab" role="tab" data-tab="results" aria-selected="false">🏆 Résultats détaillés</button>
@@ -48,7 +49,8 @@
 
     <!-- Vue d'ensemble -->
     <section data-panel="overview">
-      <h1>Vue d'ensemble</h1><p class="muted">Suivi en temps réel de l'élection · <span id="ed"></span></p>
+      <h1>Vue d'ensemble</h1><p class="muted">Suivi en temps réel de l'élection · <strong id="ed"></strong></p>
+      <div id="setupNotice"></div>
       <div class="admin-kpis">
         <div class="stat"><span class="ic" style="background:var(--yellow-50)">⭐</span><div><div class="val" id="kC">—</div><div class="lbl">Candidat·es</div></div></div>
         <div class="stat"><span class="ic" style="background:var(--green-50)">🧒🏾</span><div><div class="val" id="kV">—</div><div class="lbl">Électeurs inscrits</div></div></div>
@@ -125,6 +127,44 @@
       <div id="detail"></div>
     </section>
 
+    <!-- Éditions -->
+    <section data-panel="editions" hidden>
+      <h1>Éditions</h1>
+      <p class="muted">Chaque élection est une édition : ses candidats, électeurs et bulletins restent séparés et sont conservés dans l'historique public.</p>
+
+      <!-- Première configuration (données existantes sans édition) -->
+      <form class="card" id="setupForm" style="margin-top:20px" hidden>
+        <h3>📦 Archiver l'élection précédente et ouvrir une nouvelle édition</h3>
+        <p class="muted">Les données actuelles (<span id="legacyCounts"></span>) seront rangées dans une édition archivée, visible dans la page <a href="historique.html" target="_blank">Historique</a>. <strong>Rien n'est supprimé.</strong> Le vote s'ouvrira ensuite sur une édition vide pour les nouveaux candidats et électeurs.</p>
+        <div class="admin-grid two" style="margin-top:6px">
+          <div><label for="sArchId">Année de l'élection précédente *</label><input id="sArchId" type="text" required value="2025" maxlength="12">
+            <label for="sArchLabel">Nom affiché dans l'historique</label><input id="sArchLabel" type="text" value="Bureau 2025" maxlength="60"></div>
+          <div><label for="sNewId">Année de la nouvelle édition *</label><input id="sNewId" type="text" required maxlength="12">
+            <label for="sNewLabel">Nom de la nouvelle édition</label><input id="sNewLabel" type="text" maxlength="60"></div>
+        </div>
+        <label class="check"><input type="checkbox" id="sCopy"> Reprendre la liste des électeurs de l'élection précédente (sinon, liste vide)</label>
+        <div class="modal-actions"><button class="btn btn-primary" type="submit" id="sSubmit">📦 Archiver et ouvrir la nouvelle édition</button></div>
+      </form>
+
+      <!-- Éditions configurées -->
+      <div id="editionsView" hidden>
+        <div class="card" style="margin-top:20px">
+          <div class="result-head"><h3 style="margin:0">Toutes les éditions</h3><a class="btn btn-sm btn-ghost" href="historique.html" target="_blank" style="margin-left:auto">Voir l'historique public ↗</a></div>
+          <div class="table-wrap" style="margin-top:14px"><table class="data edition-table"><thead><tr><th>Édition</th><th>Nom affiché</th><th>Statut</th><th>Ouverte le</th><th>Clôturée le</th><th></th></tr></thead><tbody id="edTable"></tbody></table></div>
+        </div>
+        <form class="card" id="openForm" style="margin-top:20px">
+          <h3>➕ Ouvrir une nouvelle édition</h3>
+          <p class="muted">L'édition en cours (<strong id="curLabel"></strong>) sera clôturée : son vote sera fermé et ses résultats passeront dans l'historique.</p>
+          <div class="admin-grid two" style="margin-top:6px">
+            <div><label for="oId">Année / identifiant *</label><input id="oId" type="text" required maxlength="12"></div>
+            <div><label for="oLabel">Nom affiché</label><input id="oLabel" type="text" maxlength="60"></div>
+          </div>
+          <label class="check"><input type="checkbox" id="oCopy"> Reprendre la liste des électeurs de l'édition en cours</label>
+          <div class="modal-actions"><button class="btn btn-primary" type="submit" id="oSubmit">Ouvrir la nouvelle édition</button></div>
+        </form>
+      </div>
+    </section>
+
     <!-- Données -->
     <section data-panel="data" hidden>
       <h1>Données &amp; sécurité</h1><p class="muted">Exports, maintenance et remise à zéro.</p>
@@ -141,9 +181,12 @@
         </div>
         <div class="card danger-zone">
           <h3>⚠️ Zone sensible</h3>
-          <p class="muted">Pour une nouvelle édition&nbsp;: exportez d'abord les résultats, puis réinitialisez les votes. Les candidats et électeurs sont conservés.</p>
-          <button class="btn btn-danger" id="resetVotes">Réinitialiser tous les votes</button>
-          <button class="btn btn-ghost" id="resetDemo" style="margin-top:10px" hidden>Recharger les données de démonstration</button>
+          <p class="muted">Pour une nouvelle élection, utilisez plutôt l'onglet <strong>Éditions</strong> : les résultats actuels sont alors conservés dans l'historique. Ce bouton efface définitivement les bulletins de l'édition en cours uniquement (ex. après un vote d'essai).</p>
+          <button class="btn btn-danger" id="resetVotes">Réinitialiser les votes de l'édition en cours</button>
+          <div id="demoTools" style="display:grid;gap:10px;margin-top:10px" hidden>
+            <button class="btn btn-ghost" id="resetDemo">Démo : recharger les données (2 éditions)</button>
+            <button class="btn btn-ghost" id="resetDemoLegacy">Démo : simuler la situation actuelle (sans éditions)</button>
+          </div>
         </div>
       </div>
     </section>
@@ -158,10 +201,10 @@ renderChrome("admin");
 </script>
 <script type="module">
 import { ELECTION, ROLES, DISTRICTS, REQUIRE_ADMIN_LOGIN } from "./assets/js/config.js";
-import { store, isDemo, normalizeRole } from "./assets/js/store.js";
+import { store, isDemo, normalizeRole, watchElection, editionList, editionLabel } from "./assets/js/store.js";
 import { $, $$, esc, fmt, pct, avatarFor, toast, countUp, confirmDialog, describeError } from "./assets/js/ui.js";
 
-$("#ed").textContent = `${ELECTION.title} ${ELECTION.edition}`;
+$("#ed").textContent = "…";
 const roleTitle = k => (ROLES.find(r => r.key === normalizeRole(k)) || {}).title || k;
 const districtOpts = (empty) => (empty ? `<option value="">${empty}</option>` : "") + DISTRICTS.map(d => `<option>${esc(d)}</option>`).join("");
 $("#cRole").innerHTML = ROLES.map(r => `<option value="${r.key}">${esc(r.title)}</option>`).join("");
@@ -170,7 +213,7 @@ $("#cDistrict").innerHTML = districtOpts("— Non précisé —");
 $("#vDistrict").innerHTML = districtOpts("— Choisir —");
 $("#bulkDistrict").innerHTML = districtOpts("— Aucun —");
 $("#vFilter").innerHTML = districtOpts("Tous les départements");
-if (isDemo) $("#resetDemo").hidden = false;
+if (isDemo) $("#demoTools").hidden = false;
 
 /* ---------- Authentification ---------- */
 let started = false;
@@ -202,16 +245,86 @@ $(".admin-side").addEventListener("click", e => {
 });
 
 /* ---------- Données temps réel ---------- */
-const state = { candidates: [], voters: [], votes: [] };
+const state = { candidates: [], voters: [], votes: [], settings: null, edition: null, settingsLoaded: false };
 let raf; const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(renderAll); };
 function start() {
   const onErr = err => { $("#connError").innerHTML = `<div class="notice err" style="margin-bottom:16px">⚠️ ${esc(describeError(err))}</div>`; };
   let normalized = false;
-  store.watchCandidates(l => { state.candidates = l; schedule();
-    if (!normalized) { normalized = true; store.normalizeCandidateRoles(l).then(n => n && toast(`${n} poste(s) de candidat normalisé(s).`, "info")).catch(() => {}); } }, onErr);
-  store.watchVoters(l => { state.voters = l; schedule(); }, onErr);
-  store.watchVotes(l => { state.votes = l; schedule(); }, onErr);
+  watchElection("current", {
+    settings: s => { state.settings = s; state.settingsLoaded = true; renderEditions(); },
+    edition: ed => { state.edition = ed; $("#ed").textContent = ed ? editionLabel(state.settings, ed) : "Élection précédente (non archivée)"; },
+    candidates: l => { state.candidates = l; schedule();
+      if (!normalized) { normalized = true; store.normalizeCandidateRoles(l).then(n => n && toast(`${n} poste(s) de candidat normalisé(s).`, "info")).catch(() => {}); } },
+    voters: l => { state.voters = l; schedule(); },
+    votes: l => { state.votes = l; schedule(); }
+  }, onErr);
 }
+
+/* ---------- Éditions ---------- */
+const fmtDate = d => d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—";
+const nextYear = () => String(Math.max(new Date().getFullYear(), ...editionList(state.settings).map(e => Number(e.id) + 1).filter(Number.isFinite)));
+function showTab(id) { $(`.admin-side [data-tab="${id}"]`).click(); }
+function renderEditions() {
+  const s = state.settings, configured = !!(s && s.currentEdition);
+  $("#setupForm").hidden = configured; $("#editionsView").hidden = !configured;
+  $("#setupNotice").innerHTML = configured ? "" : `<div class="notice info" style="margin-top:14px;align-items:center;flex-wrap:wrap">📦 Les données actuelles sont celles de l'élection précédente. Archivez-les dans l'historique et ouvrez une nouvelle édition pour accueillir les nouveaux candidats et électeurs.
+    <button class="btn btn-sm btn-primary" type="button" id="goSetup" style="margin-left:auto">Configurer les éditions</button></div>`;
+  $("#goSetup") && ($("#goSetup").onclick = () => showTab("editions"));
+  if (!configured) {
+    if (!$("#sNewId").value) { $("#sNewId").value = String(new Date().getFullYear()); $("#sNewLabel").value = `Édition ${new Date().getFullYear()}`; }
+    return;
+  }
+  $("#curLabel").textContent = editionLabel(s, s.currentEdition);
+  if (!$("#oId").value || editionList(s).some(e => e.id === $("#oId").value)) { $("#oId").value = nextYear(); $("#oLabel").value = `Édition ${nextYear()}`; }
+  $("#edTable").innerHTML = editionList(s).map(e => `<tr>
+    <td><strong>${esc(e.id)}</strong></td><td>${esc(e.label || "")}</td>
+    <td>${e.status === "open" ? `<span class="chip chip-green">🟢 En cours</span>` : `<span class="chip">📘 Archivée</span>`}</td>
+    <td>${fmtDate(e.openedAt)}</td><td>${fmtDate(e.closedAt)}</td>
+    <td class="actions"><a class="icon-btn" href="historique.html?edition=${encodeURIComponent(e.id)}" target="_blank" aria-label="Voir ${esc(e.id)} dans l'historique">👁️</a>
+    <button class="icon-btn" data-rename="${esc(e.id)}" aria-label="Renommer ${esc(e.id)}">✏️</button></td></tr>`).join("");
+}
+$("#sNewId").addEventListener("input", () => { $("#sNewLabel").value = `Édition ${$("#sNewId").value.trim()}`; });
+$("#sArchId").addEventListener("input", () => { $("#sArchLabel").value = `Bureau ${$("#sArchId").value.trim()}`; });
+$("#oId").addEventListener("input", () => { $("#oLabel").value = `Édition ${$("#oId").value.trim()}`; });
+const validId = id => /^[A-Za-z0-9_-]{2,12}$/.test(id);
+
+$("#setupForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const archiveId = $("#sArchId").value.trim(), newId = $("#sNewId").value.trim();
+  const archiveLabel = $("#sArchLabel").value.trim() || `Bureau ${archiveId}`, newLabel = $("#sNewLabel").value.trim() || `Édition ${newId}`;
+  if (!validId(archiveId) || !validId(newId) || archiveId === newId) { toast("Indiquez deux identifiants différents (ex. 2025 et 2026), sans espaces.", "error", 4000); return; }
+  const copy = $("#sCopy").checked;
+  if (!await confirmDialog({ title: `Archiver « ${archiveLabel} » ?`, okText: "Archiver et ouvrir",
+    body: `<p>${fmt(state.candidates.length)} candidats, ${fmt(state.voters.length)} électeurs et ${fmt(state.votes.length)} bulletins seront classés dans <strong>${esc(archiveLabel)}</strong> (historique, lecture seule).</p>
+      <p>La nouvelle édition <strong>${esc(newLabel)}</strong> s'ouvrira ${copy ? `avec une copie des ${fmt(state.voters.length)} électeurs` : "sans candidats ni électeurs"}.</p>` })) return;
+  const btn = $("#sSubmit"); btn.disabled = true; btn.textContent = "Archivage…";
+  try {
+    const r = await store.setupEditions({ archiveId, archiveLabel, newId, newLabel, copyVoters: copy });
+    toast(`${fmt(r.tagged)} éléments archivés dans ${archiveLabel}.${r.copied ? ` ${r.copied} électeurs repris.` : ""}`, "success", 5000);
+  } catch (err) { console.error(err); toast(describeError(err), "error", 5000); }
+  finally { btn.disabled = false; btn.textContent = "📦 Archiver et ouvrir la nouvelle édition"; }
+});
+$("#openForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const id = $("#oId").value.trim(), label = $("#oLabel").value.trim() || `Édition ${id}`, copy = $("#oCopy").checked;
+  if (!validId(id)) { toast("Identifiant invalide (ex. 2027), sans espaces.", "error"); return; }
+  if (editionList(state.settings).some(x => x.id === id)) { toast("Cette édition existe déjà.", "error"); return; }
+  const cur = editionLabel(state.settings, state.edition);
+  if (!await confirmDialog({ title: `Ouvrir « ${label} » ?`, okText: "Ouvrir la nouvelle édition", requireText: id,
+    body: `<p><strong>${esc(cur)}</strong> sera clôturée : plus aucun vote ne sera possible pour elle, et ses résultats passeront dans l'historique.</p>
+      <p>Pensez à exporter les résultats de ${esc(cur)} avant (onglet Données).</p>` })) return;
+  const btn = $("#oSubmit"); btn.disabled = true;
+  try { const r = await store.openEdition({ id, label, copyVoters: copy }); toast(`${label} est ouverte.${r.copied ? ` ${r.copied} électeurs repris.` : ""}`, "success", 5000); }
+  catch (err) { console.error(err); toast(err.code === "edition-exists" ? "Cette édition existe déjà." : describeError(err), "error", 5000); }
+  finally { btn.disabled = false; }
+});
+$("#edTable").addEventListener("click", async e => {
+  const b = e.target.closest("[data-rename]"); if (!b) return;
+  const cur = editionList(state.settings).find(x => x.id === b.dataset.rename); if (!cur) return;
+  const label = prompt(`Nouveau nom pour l'édition ${cur.id} :`, cur.label || "");
+  if (!label || !label.trim()) return;
+  try { await store.renameEdition(cur.id, label.trim().slice(0, 60)); toast("Nom mis à jour.", "success"); } catch (err) { toast(describeError(err), "error"); }
+});
 const activeRoles = () => ROLES.filter(r => state.candidates.some(c => normalizeRole(c.role) === r.key));
 function counts() {
   const byCand = new Map(), byVoter = new Map();
@@ -221,7 +334,10 @@ function counts() {
   });
   return { byCand, byVoter };
 }
-function renderAll() { renderOverview(); renderCandidates(); renderVoters(); renderDetail(); }
+function renderAll() {
+  renderOverview(); renderCandidates(); renderVoters(); renderDetail();
+  $("#legacyCounts").textContent = `${fmt(state.candidates.length)} candidats, ${fmt(state.voters.length)} électeurs, ${fmt(state.votes.length)} bulletins`;
+}
 
 function renderOverview() {
   const { byVoter } = counts();
@@ -265,7 +381,7 @@ $("#candForm").addEventListener("submit", async e => {
   const id = $("#cId").value, btn = $("#cSubmit"); btn.disabled = true;
   try {
     if (id) { await store.updateCandidate(id, data); toast("Candidat·e mis·e à jour.", "success"); }
-    else { await store.addCandidate(data); toast(`${name} ajouté·e.`, "success"); }
+    else { await store.addCandidate(data, state.edition); toast(`${name} ajouté·e.`, "success"); }
     resetCandForm();
   } catch (err) { console.error(err); toast(describeError(err), "error"); } finally { btn.disabled = false; }
 });
@@ -317,7 +433,7 @@ $("#voterForm").addEventListener("submit", async e => {
   if (!name || !district) { toast("Nom et département obligatoires.", "error"); return; }
   if (state.voters.some(v => String(v.name).toLowerCase() === name.toLowerCase() && v.district === district) &&
       !await confirmDialog({ title: "Doublon possible", body: `<p>${esc(name)} existe déjà dans ${esc(district)}. Ajouter quand même ?</p>`, okText: "Ajouter" })) return;
-  try { await store.addVoter({ name, district, emoji: "" }); $("#vName").value = ""; $("#vName").focus(); toast(`${name} ajouté·e.`, "success"); } catch (err) { toast(describeError(err), "error"); }
+  try { await store.addVoter({ name, district, emoji: "" }, state.edition);$("#vName").value = ""; $("#vName").focus(); toast(`${name} ajouté·e.`, "success"); } catch (err) { toast(describeError(err), "error"); }
 });
 $("#bulkForm").addEventListener("submit", async e => {
   e.preventDefault();
@@ -330,7 +446,7 @@ $("#bulkForm").addEventListener("submit", async e => {
   }).filter(v => v.name);
   if (!list.length) { toast("Collez au moins un nom.", "error"); return; }
   if (!await confirmDialog({ title: `Importer ${list.length} électeur(s) ?`, body: `<p>Exemple : <strong>${esc(list[0].name)}</strong> — ${esc(list[0].district || "sans département")}</p>`, okText: "Importer" })) return;
-  try { await store.addVotersBulk(list); $("#bulkText").value = ""; toast(`${list.length} électeur(s) importé(s).`, "success"); } catch (err) { toast(describeError(err), "error"); }
+  try { await store.addVotersBulk(list, state.edition);$("#bulkText").value = ""; toast(`${list.length} électeur(s) importé(s).`, "success"); } catch (err) { toast(describeError(err), "error"); }
 });
 
 /* ---------- Résultats détaillés ---------- */
@@ -348,7 +464,7 @@ function renderDetail() {
 }
 
 /* ---------- Exports ---------- */
-const stamp = () => new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+const stamp = () => (state.edition ? state.edition + "_" : "") + new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
 function download(name, content, type) { const url = URL.createObjectURL(new Blob([content], { type })); const a = document.createElement("a"); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 const csv = rows => "\ufeff" + rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
 $("#expJson").addEventListener("click", () => {
@@ -367,11 +483,13 @@ $("#expVotersCsv").addEventListener("click", () => { const { byVoter } = counts(
   download(`electeurs_${stamp()}.csv`, csv([["Nom", "Département", "Postes votés"], ...state.voters.map(v => [v.name, v.district || "", byVoter.get(v.id) || 0])]), "text/csv;charset=utf-8"); });
 
 $("#resetVotes").addEventListener("click", async () => {
-  if (!await confirmDialog({ title: "Réinitialiser tous les votes ?", danger: true, okText: "Tout effacer", requireText: "EFFACER",
-    body: `<p>Les <strong>${fmt(state.votes.length)} bulletins</strong> seront définitivement supprimés. Pensez à exporter les résultats avant.</p>` })) return;
-  try { await store.resetVotes(); toast("Tous les votes ont été réinitialisés.", "success"); } catch (err) { toast(describeError(err), "error"); }
+  const edName = state.edition ? editionLabel(state.settings, state.edition) : "l'élection actuelle";
+  if (!await confirmDialog({ title: `Réinitialiser les votes de ${edName} ?`, danger: true, okText: "Tout effacer", requireText: "EFFACER",
+    body: `<p>Les <strong>${fmt(state.votes.length)} bulletins</strong> de ${esc(edName)} seront définitivement supprimés. Les éditions archivées ne sont pas touchées. Pensez à exporter les résultats avant.</p>` })) return;
+  try { await store.resetVotes(state.edition);toast("Tous les votes ont été réinitialisés.", "success"); } catch (err) { toast(describeError(err), "error"); }
 });
 $("#resetDemo").addEventListener("click", async () => { await store.resetDemo(); toast("Données de démonstration rechargées.", "success"); });
+$("#resetDemoLegacy").addEventListener("click", async () => { await store.resetDemo(true); toast("Démo : données de l'élection précédente, sans éditions.", "success"); });
 </script>
 </body>
 </html>

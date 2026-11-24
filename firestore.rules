@@ -6,8 +6,9 @@ rules_version = '2';
 //
 // 1. Remplacez l'adresse ci-dessous par l'e-mail du ou des comptes admin
 //    (créés dans Authentication → Users).
-// 2. Lecture publique : la page de vote et les résultats en ont besoin.
-// 3. Écriture publique limitée à UN bulletin par électeur et par poste.
+// 2. Lecture publique : vote, résultats et historique en ont besoin.
+// 3. Écriture publique limitée à UN bulletin par électeur et par poste,
+//    uniquement pour l'édition en cours (settings/election.currentEdition).
 // =====================================================================
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -23,20 +24,27 @@ service cloud.firestore {
       return ['pres', 'vice', 'sec', 'rapporteur', 'secretaire', 'relations'];
     }
 
-    // Un bulletin valide : identifiant = <voterId>_<poste>, électeur existant,
-    // candidat existant et inscrit sur ce poste, champs contrôlés.
+    // Un bulletin valide : identifiant = <voterId>_<poste>, édition en cours,
+    // électeur et candidat existants, de la même édition, candidat inscrit sur ce poste.
     function isValidBallot(voteId) {
       let d = request.resource.data;
+      let current = get(/databases/$(database)/documents/settings/election).data.currentEdition;
       let voter = get(/databases/$(database)/documents/voters/$(d.voterId));
       let cand = get(/databases/$(database)/documents/candidates/$(d.candidateId));
-      return d.keys().hasOnly(['voterId', 'voterName', 'candidateId', 'candidateName', 'role', 'district', 'ts'])
-        && d.keys().hasAll(['voterId', 'candidateId', 'role', 'ts'])
+      return d.keys().hasOnly(['voterId', 'voterName', 'candidateId', 'candidateName', 'role', 'district', 'edition', 'ts'])
+        && d.keys().hasAll(['voterId', 'candidateId', 'role', 'edition', 'ts'])
         && d.voterId is string && d.candidateId is string && d.ts is string
         && d.role in roleKeys()
+        && d.edition == current
         && voteId == d.voterId + '_' + d.role
-        && voter != null
-        && cand != null
+        && voter != null && voter.data.edition == d.edition
+        && cand != null && cand.data.edition == d.edition
         && cand.data.role == d.role;
+    }
+
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /candidates/{id} {
@@ -52,8 +60,7 @@ service cloud.firestore {
     match /votes/{voteId} {
       allow read: if true;
       allow create: if isAdmin() || isValidBallot(voteId);
-      allow update: if false;          // un bulletin ne se modifie jamais
-      allow delete: if isAdmin();      // réinitialisation / suppression par l'admin
+      allow update, delete: if isAdmin();   // archivage (ajout de l'édition) et réinitialisation
     }
 
     // Tout le reste est fermé
