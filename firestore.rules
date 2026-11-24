@@ -1,0 +1,64 @@
+rules_version = '2';
+
+// =====================================================================
+// Règles Firestore — Parlement des Enfants du Congo
+// À coller dans : Console Firebase → Firestore Database → Règles → Publier
+//
+// 1. Remplacez l'adresse ci-dessous par l'e-mail du ou des comptes admin
+//    (créés dans Authentication → Users).
+// 2. Lecture publique : la page de vote et les résultats en ont besoin.
+// 3. Écriture publique limitée à UN bulletin par électeur et par poste.
+// =====================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'REMPLACEZ-PAR-VOTRE-EMAIL-ADMIN@exemple.org'
+        ];
+    }
+
+    function roleKeys() {
+      return ['pres', 'vice', 'sec', 'rapporteur', 'secretaire', 'relations'];
+    }
+
+    // Un bulletin valide : identifiant = <voterId>_<poste>, électeur existant,
+    // candidat existant et inscrit sur ce poste, champs contrôlés.
+    function isValidBallot(voteId) {
+      let d = request.resource.data;
+      let voter = get(/databases/$(database)/documents/voters/$(d.voterId));
+      let cand = get(/databases/$(database)/documents/candidates/$(d.candidateId));
+      return d.keys().hasOnly(['voterId', 'voterName', 'candidateId', 'candidateName', 'role', 'district', 'ts'])
+        && d.keys().hasAll(['voterId', 'candidateId', 'role', 'ts'])
+        && d.voterId is string && d.candidateId is string && d.ts is string
+        && d.role in roleKeys()
+        && voteId == d.voterId + '_' + d.role
+        && voter != null
+        && cand != null
+        && cand.data.role == d.role;
+    }
+
+    match /candidates/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /voters/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /votes/{voteId} {
+      allow read: if true;
+      allow create: if isAdmin() || isValidBallot(voteId);
+      allow update: if false;          // un bulletin ne se modifie jamais
+      allow delete: if isAdmin();      // réinitialisation / suppression par l'admin
+    }
+
+    // Tout le reste est fermé
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
