@@ -368,6 +368,32 @@ textarea { min-height: 120px; resize: vertical; }
 .district-bars .bar span { display: block; height: 100%; background: var(--green); border-radius: 999px; transition: width .6s; }
 .district-bars .row .n { text-align: right; color: var(--muted); }
 @media (max-width: 560px) { .district-bars .row { grid-template-columns: 100px 1fr 54px; font-size: 13px; } }
+/* Historique des Bureaux */
+.history-hero { padding-bottom: 48px; }
+.edition-tabs { padding-top: 22px; }
+.bureau-card { margin-top: 22px; padding: 28px; background: linear-gradient(180deg, #fff, #fbfdff); }
+.bureau-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+@media (max-width: 920px) { .bureau-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .bureau-grid { grid-template-columns: 1fr; } }
+.member { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 22px 16px 18px; border-radius: var(--radius); background: #fff; box-shadow: var(--shadow-sm); border-top: 5px solid var(--green); }
+.member:nth-child(3n+2) { border-top-color: var(--yellow); }
+.member:nth-child(3n) { border-top-color: var(--red); }
+.member .role { font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); min-height: 2.6em; display: flex; align-items: center; }
+.member img { width: 92px; height: 92px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 5px #fff, 0 0 0 8px var(--yellow); margin: 6px 0; }
+.member .nm { font-family: var(--display); font-weight: 600; font-size: 20px; line-height: 1.2; }
+.member .meta { font-size: 13px; color: var(--muted); font-weight: 700; }
+.member.tie .tie-avas { display: flex; margin: 6px 0; }
+.member.tie .tie-avas img { width: 64px; height: 64px; margin: 0 -8px; box-shadow: 0 0 0 4px #fff; }
+.member .ava-empty { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); font-size: 28px; margin: 6px 0; }
+.member.empty .nm { color: var(--muted); }
+.history-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+.history-results .ranking { margin-top: 16px; }
+@media (max-width: 860px) { .history-results { grid-template-columns: minmax(0, 1fr); } }
+.edition-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.edition-table td, .edition-table th { white-space: nowrap; }
+.check { display: flex; align-items: center; gap: 10px; font-weight: 700; margin-top: 14px; color: var(--ink-2); font-size: 14px; }
+.check input { width: 20px; height: 20px; accent-color: var(--green); }
+
 body.presenting .site-header, body.presenting .site-footer { display: none; }
 body.presenting .results-hero { padding-top: 24px; }
 

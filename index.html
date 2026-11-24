@@ -120,6 +120,12 @@
           <a href="podium.html" class="btn btn-white btn-lg">Résultats en direct</a>
         </div>
       </div>
+      <div class="card reveal edition-banner" id="historyTeaser" style="margin-top:28px;padding:24px 28px" hidden>
+        <span style="font-size:34px">📚</span>
+        <div style="flex:1;min-width:220px"><h3 style="margin:0">Le Bureau sortant : <span id="historyLast"></span></h3>
+          <p class="muted" style="margin:4px 0 0">Découvrez les enfants élus lors des éditions précédentes et leurs résultats.</p></div>
+        <a href="historique.html" class="btn btn-ghost">Voir l'historique →</a>
+      </div>
       <div class="partners reveal" style="margin-top:56px">
         <div class="partner"><img class="round" src="logope.png" alt="Logo du Parlement des Enfants du Congo"><span>Parlement des Enfants<br>du Congo</span></div>
         <div class="partner" id="partnerFlag"></div>
@@ -148,8 +154,8 @@ $("#rolesGrid").innerHTML = ROLES.map(r => `
 revealOnScroll();
 
 /* Chiffres en direct */
-const { store } = await import("./assets/js/store.js").catch(err => { console.error(err); return {}; });
-if (store) {
+const mod = await import("./assets/js/store.js").catch(err => { console.error(err); return null; });
+if (mod) {
   const state = { voters: [], candidates: [], votes: [] };
   const onErr = err => { $("#connError").innerHTML = `<div class="notice err conn-error">⚠️ ${esc(describeError(err))}</div>`; };
   const update = () => {
@@ -158,9 +164,17 @@ if (store) {
     countUp($("#sVotes"), state.votes.length);
     countUp($("#sDistricts"), new Set(state.voters.map(v => v.district).filter(Boolean)).size);
   };
-  store.watchVoters(l => { state.voters = l; update(); }, onErr);
-  store.watchCandidates(l => { state.candidates = l; update(); }, onErr);
-  store.watchVotes(l => { state.votes = l; update(); }, onErr);
+  mod.watchElection("current", {
+    settings: s => {
+      if (s && s.currentEdition) $("#heroEdition").textContent = `${ELECTION.title} · ${mod.editionLabel(s, s.currentEdition)}`;
+      const past = mod.editionList(s).filter(e => e.status === "archived");
+      $("#historyTeaser").hidden = !past.length;
+      if (past.length) $("#historyLast").textContent = past[0].label || `Édition ${past[0].id}`;
+    },
+    voters: l => { state.voters = l; update(); },
+    candidates: l => { state.candidates = l; update(); },
+    votes: l => { state.votes = l; update(); }
+  }, onErr);
 } else {
   $("#connError").innerHTML = `<div class="notice err conn-error">⚠️ Impossible de charger la base de données. Vérifiez votre connexion Internet.</div>`;
 }

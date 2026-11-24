@@ -21,6 +21,7 @@ const NAV = [
   { href: "index.html", label: "Accueil", id: "home" },
   { href: "vote.html", label: "Voter", id: "vote" },
   { href: "podium.html", label: "Résultats", id: "results" },
+  { href: "historique.html", label: "Historique", id: "history" },
   { href: "index.html#droits", label: "Nos droits", id: "rights" }
 ];
 
@@ -77,7 +78,7 @@ export function renderChrome(active, { isDemo = demoMode, minimal = false } = {}
           <small>pour chaque enfant</small>
         </div>
         <nav class="footer-links" aria-label="Liens du pied de page">
-          <a href="index.html">Accueil</a><a href="vote.html">Voter</a><a href="podium.html">Résultats</a>
+          <a href="index.html">Accueil</a><a href="vote.html">Voter</a><a href="podium.html">Résultats</a><a href="historique.html">Historique des Bureaux</a>
           <a href="index.html#droits">Droits de l'enfant</a><a href="admin.html">Espace organisateurs</a>
         </nav>
       </div>
@@ -191,9 +192,11 @@ export function confirmDialog({ title, body, okText = "Confirmer", cancelText = 
 /* ---------- Animation des compteurs ---------- */
 export function countUp(el, to, ms = 900) {
   const from = Number(el.dataset.v || 0); el.dataset.v = to;
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches || from === to) { el.textContent = fmt(to); return; }
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || from === to || document.hidden) { el.textContent = fmt(to); return; }
   const t0 = performance.now();
-  const step = t => { const k = Math.min(1, (t - t0) / ms); el.textContent = fmt(Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)))); if (k < 1) requestAnimationFrame(step); };
+  // Valeur finale garantie même si l'animation est suspendue (onglet en arrière-plan)
+  setTimeout(() => { if (Number(el.dataset.v) === to) el.textContent = fmt(to); }, ms + 50);
+  const step = t => { if (Number(el.dataset.v) !== to) return; const k = Math.min(1, (t - t0) / ms); el.textContent = fmt(Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)))); if (k < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
 }
 

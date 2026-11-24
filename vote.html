@@ -94,18 +94,22 @@ $("#edition").textContent = `Édition ${ELECTION.edition}`;
 </script>
 <script type="module">
 import { ROLES, DISTRICTS } from "./assets/js/config.js";
-import { store, normalizeRole } from "./assets/js/store.js";
+import { store, watchElection, editionLabel, normalizeRole } from "./assets/js/store.js";
 import { $, esc, avatarFor, toast, confetti, openModal, closeModal, bindModalClose, describeError } from "./assets/js/ui.js";
 
-const state = { candidates: [], voters: [], votes: [], voter: null, loaded: { c: false, v: false, b: false } };
+const state = { candidates: [], voters: [], votes: [], voter: null, edition: null, loaded: { c: false, v: false, b: false } };
 const pickerModal = $("#pickerModal"), confirmModal = $("#confirmModal"), thanksModal = $("#thanksModal");
 [pickerModal, confirmModal, thanksModal].forEach(bindModalClose);
 
 const onErr = err => { $("#connError").innerHTML = `<div class="notice err conn-error">⚠️ ${esc(describeError(err))}</div>`; };
-store.watchCandidates(l => { state.candidates = l; state.loaded.c = true; render(); }, onErr);
-store.watchVoters(l => { state.voters = l.sort((a, b) => String(a.name).localeCompare(String(b.name), "fr")); state.loaded.v = true;
-  if (state.voter) state.voter = l.find(v => v.id === state.voter.id) || null; render(); if (!pickerModal.hidden) renderPicker(); }, onErr);
-store.watchVotes(l => { state.votes = l; state.loaded.b = true; render(); if (!pickerModal.hidden) renderPicker(); }, onErr);
+watchElection("current", {
+  settings: s => { if (s && s.currentEdition) $("#edition").textContent = editionLabel(s, s.currentEdition); },
+  edition: ed => { if (state.edition !== undefined && state.edition !== ed && state.voter) { state.voter = null; } state.edition = ed; },
+  candidates: l => { state.candidates = l; state.loaded.c = true; render(); },
+  voters: l => { state.voters = l.sort((a, b) => String(a.name).localeCompare(String(b.name), "fr")); state.loaded.v = true;
+    if (state.voter) state.voter = l.find(v => v.id === state.voter.id) || null; render(); if (!pickerModal.hidden) renderPicker(); },
+  votes: l => { state.votes = l; state.loaded.b = true; render(); if (!pickerModal.hidden) renderPicker(); }
+}, onErr);
 
 /* --- Données dérivées --- */
 const activeRoles = () => ROLES.filter(r => state.candidates.some(c => normalizeRole(c.role) === r.key));
@@ -227,7 +231,7 @@ $("#confirmBtn").addEventListener("click", async () => {
   const { candidate, btn: srcBtn } = pending;
   const rect = srcBtn.getBoundingClientRect();
   try {
-    await store.castVote({ voter: state.voter, candidate });
+    await store.castVote({ voter: state.voter, candidate, edition: state.edition });
     closeModal(confirmModal);
     flyBallot(rect.left + rect.width / 2, rect.top);
     confetti(rect.left + rect.width / 2, rect.top, 70);

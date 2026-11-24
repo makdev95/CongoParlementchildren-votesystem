@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Historique des Bureaux — Parlement des Enfants du Congo</title>
+<meta name="description" content="Les Bureaux exécutifs élus par le Parlement des Enfants du Congo, édition après édition.">
+<meta name="theme-color" content="#0c2340">
+<link rel="icon" href="logope.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main>
+  <section class="results-hero history-hero">
+    <div class="container">
+      <span class="eyebrow">📚 Mémoire du Parlement des Enfants</span>
+      <h1>Historique des Bureaux</h1>
+      <p>Chaque édition, les jeunes parlementaires élisent leur Bureau exécutif national. Retrouvez ici les équipes élues et les résultats complets.</p>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="role-tabs edition-tabs" role="tablist" aria-label="Choisir une édition" id="tabs"></div>
+    <div id="connError"></div>
+    <div id="notice"></div>
+
+    <div class="kpis" style="margin-top:18px">
+      <div class="stat"><span class="ic" style="background:var(--red-50)">🗳️</span><div><div class="val" id="kBallots">—</div><div class="lbl">Bulletins</div></div></div>
+      <div class="stat"><span class="ic" style="background:var(--green-50)">🧒🏾</span><div><div class="val" id="kVoted">—</div><div class="lbl">Électeurs ayant voté</div></div></div>
+      <div class="stat"><span class="ic" style="background:var(--yellow-50)">📈</span><div><div class="val" id="kTurnout">—</div><div class="lbl">Participation</div></div></div>
+      <div class="stat"><span class="ic" style="background:var(--cyan-50)">⭐</span><div><div class="val" id="kCands">—</div><div class="lbl">Candidat·es</div></div></div>
+    </div>
+
+    <section class="card bureau-card">
+      <div class="result-head"><h2 id="bureauTitle">Le Bureau élu</h2><span class="chip" id="bureauChip"></span></div>
+      <p class="muted" id="bureauSub" style="margin:6px 0 0"></p>
+      <div class="bureau-grid" id="bureau"><div class="skeleton" style="height:220px;grid-column:1/-1"></div></div>
+    </section>
+
+    <h2 style="margin:40px 0 4px">Résultats détaillés</h2>
+    <p class="muted" style="margin:0">Classement complet de chaque poste pour cette édition.</p>
+    <div class="history-results" id="details"></div>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script type="module">
+import { renderChrome } from "./assets/js/ui.js";
+renderChrome("history");
+</script>
+<script type="module">
+import { ROLES } from "./assets/js/config.js";
+import { store, watchElection, editionList, editionLabel, tally, normalizeRole } from "./assets/js/store.js";
+import { $, esc, fmt, pct, avatarFor, countUp, describeError } from "./assets/js/ui.js";
+
+const state = { settings: null, settingsLoaded: false, selected: new URLSearchParams(location.search).get("edition"), candidates: [], voters: [], votes: [], ready: 0 };
+const onErr = err => { $("#connError").innerHTML = `<div class="notice err conn-error">⚠️ ${esc(describeError(err))}</div>`; };
+let unsub = null, raf = null;
+const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); };
+
+/* 1. Liste des éditions, puis 2. données de l'édition choisie */
+store.watchSettings(s => { state.settings = s; state.settingsLoaded = true; choose(); },
+  err => { console.warn(err); state.settings = null; state.settingsLoaded = true; choose(); });
+
+function choose(id) {
+  const eds = editionList(state.settings);
+  if (id) state.selected = id;
+  if (eds.length && !eds.some(e => e.id === state.selected)) {
+    // Par défaut : la dernière édition terminée, sinon l'édition en cours
+    state.selected = (eds.find(e => e.status === "archived") || eds[0]).id;
+  }
+  if (!eds.length) state.selected = null;
+  renderTabs(eds);
+  const key = state.selected || "__legacy__";
+  if (unsub && unsub.key === key) return;
+  unsub && unsub();
+  state.candidates = []; state.voters = []; state.votes = []; state.ready = 0;
+  const stop = watchElection(state.selected || "current", {
+    candidates: l => { state.candidates = l; state.ready |= 1; schedule(); },
+    voters: l => { state.voters = l; state.ready |= 2; schedule(); },
+    votes: l => { state.votes = l; state.ready |= 4; schedule(); }
+  }, onErr);
+  unsub = Object.assign(() => stop(), { key });
+  if (state.selected) history.replaceState(null, "", `?edition=${encodeURIComponent(state.selected)}`);
+  schedule();
+}
+
+function renderTabs(eds) {
+  $("#tabs").innerHTML = eds.map(e => `<button role="tab" aria-selected="${e.id === state.selected}" data-ed="${esc(e.id)}">
+    ${e.status === "open" ? "🟢" : "📘"} ${esc(e.label || "Édition " + e.id)}${e.status === "open" ? " · en cours" : ""}</button>`).join("");
+  $("#notice").innerHTML = state.settingsLoaded && !eds.length
+    ? `<div class="notice info" style="margin-top:18px">ℹ️ Les données affichées sont celles de la dernière élection. L'historique par édition sera disponible dès que les organisateurs auront ouvert une nouvelle édition.</div>` : "";
+}
+$("#tabs").addEventListener("click", e => { const b = e.target.closest("[data-ed]"); if (b) choose(b.dataset.ed); });
+
+function render() {
+  if (state.ready !== 7) return;
+  const ed = editionList(state.settings).find(e => e.id === state.selected);
+  const open = ed && ed.status === "open";
+  const votedIds = new Set(state.votes.map(v => v.voterId));
+  countUp($("#kBallots"), state.votes.length);
+  countUp($("#kVoted"), votedIds.size);
+  $("#kTurnout").textContent = state.voters.length ? pct(votedIds.size, state.voters.length) + " %" : "—";
+  countUp($("#kCands"), state.candidates.length);
+
+  const label = ed ? editionLabel(state.settings, ed.id) : "Dernière élection";
+  const closed = ed && ed.closedAt ? new Date(ed.closedAt).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" }) : "";
+  $("#bureauTitle").textContent = open ? `En tête — ${label}` : `Le Bureau élu — ${label}`;
+  $("#bureauChip").className = "chip " + (open ? "chip-yellow" : "chip-green");
+  $("#bureauChip").textContent = open ? "Résultats provisoires" : "Résultats définitifs";
+  $("#bureauSub").textContent = open ? "Le vote est en cours : ces résultats peuvent encore changer." : (closed ? `Édition clôturée le ${closed}.` : "");
+
+  const roles = ROLES.filter(r => state.candidates.some(c => normalizeRole(c.role) === r.key));
+  if (!roles.length) {
+    $("#bureau").innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="big">🗂️</span>Aucun candidat enregistré pour cette édition.</div>`;
+    $("#details").innerHTML = ""; return;
+  }
+  const results = roles.map(r => ({ r, ...tally(state.candidates, state.votes, r.key) }));
+  $("#bureau").innerHTML = results.map(({ r, winner, tie, list, total }) => {
+    if (tie) {
+      const tied = list.filter(c => c.n === list[0].n);
+      return `<article class="member tie"><span class="role">${r.icon} ${esc(r.title)}</span>
+        <div class="tie-avas">${tied.slice(0, 3).map(c => `<img src="${esc(avatarFor(c))}" alt="">`).join("")}</div>
+        <strong class="nm">Égalité</strong><span class="meta">${tied.map(c => esc(c.name)).join(" · ")} — ${fmt(list[0].n)} voix</span></article>`;
+    }
+    if (!winner) return `<article class="member empty"><span class="role">${r.icon} ${esc(r.title)}</span><div class="ava-empty">—</div><strong class="nm">Aucun vote</strong></article>`;
+    return `<article class="member"><span class="role">${r.icon} ${esc(r.title)}</span>
+      <img src="${esc(avatarFor(winner))}" alt="">
+      <strong class="nm">${esc(winner.name)}</strong>
+      <span class="meta">${winner.district ? "📍 " + esc(winner.district) + " · " : ""}${pct(winner.n, total)} % · ${fmt(winner.n)} voix</span></article>`;
+  }).join("");
+
+  $("#details").innerHTML = results.map(({ r, list, total }) => `
+    <article class="card">
+      <div class="result-head"><span style="font-size:24px">${r.icon}</span><h3 style="margin:0">${esc(r.title)}</h3><span class="chip">${fmt(total)} vote${total > 1 ? "s" : ""}</span></div>
+      <ol class="ranking">${list.map((c, i) => `
+        <li><span class="rk">${i + 1}</span><img src="${esc(avatarFor(c))}" alt="">
+          <div class="bar-wrap"><div class="bar-label"><span>${esc(c.name)}</span><span class="muted">${pct(c.n, total)} %</span></div>
+          <div class="bar"><span style="width:${pct(c.n, total)}%"></span></div></div>
+          <span class="vv">${fmt(c.n)}<small>voix</small></span></li>`).join("")}
+      </ol></article>`).join("");
+}
+</script>
+</body>
+</html>

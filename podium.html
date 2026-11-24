@@ -24,6 +24,7 @@
         <p>Félicitations à toutes et à tous les candidat·es&nbsp;! Les chiffres se mettent à jour automatiquement.</p>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn btn-white" href="historique.html">📚 Bureaux précédents</a>
         <button class="btn btn-yellow" id="presentBtn">📺 Mode projection</button>
       </div>
     </div>
@@ -59,24 +60,20 @@ $("#edition").textContent = `${ELECTION.title} ${ELECTION.edition}`;
 </script>
 <script type="module">
 import { ROLES } from "./assets/js/config.js";
-import { store, normalizeRole } from "./assets/js/store.js";
+import { watchElection, editionLabel, normalizeRole, tally as tallyRole } from "./assets/js/store.js";
 import { $, esc, fmt, pct, avatarFor, countUp, describeError, confetti } from "./assets/js/ui.js";
 
 const state = { candidates: [], voters: [], votes: [], tab: "all", loaded: false };
 const onErr = err => { $("#connError").innerHTML = `<div class="notice err conn-error">⚠️ ${esc(describeError(err))}</div>`; };
 let raf = null; const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); };
-store.watchCandidates(l => { state.candidates = l; state.loaded = true; schedule(); }, onErr);
-store.watchVoters(l => { state.voters = l; schedule(); }, onErr);
-store.watchVotes(l => { state.votes = l; schedule(); }, onErr);
+watchElection("current", {
+  settings: s => { if (s && s.currentEdition) $("#edition").textContent = editionLabel(s, s.currentEdition); },
+  candidates: l => { state.candidates = l; state.loaded = true; schedule(); },
+  voters: l => { state.voters = l; schedule(); },
+  votes: l => { state.votes = l; schedule(); }
+}, onErr);
 
-function tally(roleKey) {
-  const cands = state.candidates.filter(c => normalizeRole(c.role) === roleKey);
-  const counts = new Map(cands.map(c => [c.id, 0]));
-  state.votes.forEach(v => { if (normalizeRole(v.role) === roleKey && counts.has(v.candidateId)) counts.set(v.candidateId, counts.get(v.candidateId) + 1); });
-  const total = [...counts.values()].reduce((a, b) => a + b, 0);
-  const list = cands.map(c => ({ ...c, n: counts.get(c.id) })).sort((a, b) => b.n - a.n || String(a.name).localeCompare(String(b.name), "fr"));
-  return { list, total };
-}
+const tally = roleKey => tallyRole(state.candidates, state.votes, roleKey);
 
 function renderTabs(roles) {
   const tabs = [{ key: "all", short: "Tous les postes", icon: "✨" }, ...roles];
