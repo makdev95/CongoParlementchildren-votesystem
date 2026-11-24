@@ -1,258 +1,161 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Parlement des Enfants — Résultats & Podiums</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Résultats en direct — Parlement des Enfants du Congo</title>
+<meta name="description" content="Résultats et podiums en temps réel de l'élection du Bureau du Parlement des Enfants du Congo.">
+<meta name="theme-color" content="#0c2340">
+<link rel="icon" href="logope.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
-<style>
-  :root{--bg:#f7feff;--card:#fff;--accent:#0277bd;--muted:#55607a}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#e9f7ff);color:#082033;display:flex;flex-direction:column;align-items:center;padding:18px}
-  .container{width:100%;max-width:1200px}
-  header{display:flex;align-items:center;gap:16px;justify-content:space-between}
-  .logo-area{display:flex;align-items:center;gap:12px}
-  .logo-preview{width:92px;height:92px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(6,20,40,0.06);overflow:hidden}
-  .logo-preview img{width:100%;height:100%;object-fit:contain}
-  h1{font-size:40px;margin:14px 0 6px}
-  .subtitle{color:var(--muted);font-size:14px}
-  main{width:100%;margin-top:18px}
-  .role-section{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 8px 32px rgba(6,20,40,0.06);margin-bottom:18px}
-  .role-head{display:flex;align-items:center;justify-content:space-between}
-  .role-title{font-weight:800;font-size:20px}
-  .podium{display:flex;gap:18px;align-items:flex-end;justify-content:center;margin-top:12px}
-  .pod{width:220px;border-radius:12px;padding:12px;background:linear-gradient(180deg,#fff,#f8fffb);text-align:center;box-shadow:0 6px 20px rgba(6,20,40,0.04)}
-  .pod .place{font-weight:900;font-size:22px;margin-bottom:8px}
-  .pod .avatar{width:120px;height:120px;border-radius:50%;overflow:hidden;margin:0 auto;border:6px solid #fff;box-shadow:0 8px 30px rgba(6,20,40,0.08)}
-  .pod .name{font-weight:800;margin-top:8px}
-  .pod .percent{font-weight:700;margin-top:6px}
-  .pod.first{background:linear-gradient(180deg,#f0fff4,#ecfff6);border:3px solid #08a200}
-  .pod.second{background:linear-gradient(180deg,#fffdf4,#fff9ec);border:3px solid #f7d117}
-  .pod.third{background:linear-gradient(180deg,#fff4f4,#fff8f8);border:3px solid #d91f2a}
-
-  .large-msg{width:100%;background:linear-gradient(90deg,#fff,#f0fff6);border-radius:12px;padding:20px;margin:18px 0;text-align:center}
-  .large-msg h2{font-size:48px;margin:0;color:#0b7a2a}
-
-  .empty{color:var(--muted);text-align:center;padding:40px}
-
-  footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
-
-  @media (max-width:900px){ .podium{flex-direction:column-reverse;align-items:center} .pod{width:92%;max-width:360px} .logo-preview{width:68px;height:68px} h1{font-size:28px} .large-msg h2{font-size:28px} }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="logo-area">
-        <div class="logo-preview" id="logoPreview">
-          <!-- logo will be shown here -->
-          <span id="logoPlaceholder" style="color:#6b7280;font-weight:700">LOGO</span>
-        </div>
-        <div>
-          <div style="font-weight:900;color:#0b2b3a">Parlement des Enfants</div>
-          <div class="subtitle">Résultats officiels 2025 — Podiums en direct</div>
-        </div>
-      </div>
+<header id="site-header"></header>
+
+<main>
+  <section class="results-hero">
+    <div class="container results-top">
       <div>
-        <label for="logoInput" style="cursor:pointer;padding:8px 12px;border-radius:10px;background:#eef9ff;border:1px solid #dff4ff;font-weight:700">Importer</label>
-        <input id="logoInput" type="file" accept="image/*" style="display:none" />
+        <span class="eyebrow"><span class="live-dot"></span> Résultats en direct · <span id="edition"></span></span>
+        <h1>Le Bureau des enfants prend forme&nbsp;🏆</h1>
+        <p>Félicitations à toutes et à tous les candidat·es&nbsp;! Les chiffres se mettent à jour automatiquement.</p>
       </div>
-    </header>
-
-    <div class="large-msg" role="status" aria-live="polite">
-      <h2 id="congrats">FÉLICITATIONS à tous les participants 🎉</h2>
-      <div id="subtitleLive" style="margin-top:6px;color:var(--muted)"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-yellow" id="presentBtn">📺 Mode projection</button>
+      </div>
     </div>
+  </section>
 
-    <main id="rolesContainer">
-      <!-- role sections will be injected here -->
-    </main>
+  <div class="container">
+    <div class="kpis">
+      <div class="stat"><span class="ic" style="background:var(--red-50)">🗳️</span><div><div class="val" id="kBallots">—</div><div class="lbl">Bulletins</div></div></div>
+      <div class="stat"><span class="ic" style="background:var(--green-50)">🧒🏾</span><div><div class="val" id="kVoted">—</div><div class="lbl">Électeurs ayant voté</div></div></div>
+      <div class="stat"><span class="ic" style="background:var(--yellow-50)">📈</span><div><div class="val" id="kTurnout">—</div><div class="lbl">Participation</div></div></div>
+      <div class="stat"><span class="ic" style="background:var(--cyan-50)">📍</span><div><div class="val" id="kDistricts">—</div><div class="lbl">Départements votants</div></div></div>
+    </div>
+    <div id="connError"></div>
 
-    <footer>Affichage public des podiums — mis à jour en temps réel</footer>
+    <div class="role-tabs" role="tablist" aria-label="Choisir un poste" id="tabs"></div>
+    <div id="results"><div class="skeleton" style="height:420px;margin-top:22px"></div></div>
+
+    <section class="card" style="margin-top:22px;padding:28px">
+      <div class="result-head"><h2>📍 Participation par département</h2><span class="chip chip-cyan" id="dTotal"></span></div>
+      <p class="muted" style="margin:6px 0 18px">Part des électeurs inscrits de chaque département ayant déjà voté.</p>
+      <div class="district-bars" id="districtBars"></div>
+    </section>
   </div>
+</main>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script>
-// --- Replace with your Firebase config if needed ---
-const firebaseConfig = {
-  apiKey: "AIzaSyA_cdwwXT6DRcEm-555RxXETZ0Pwnv0bcQ",
-  authDomain: "parlementvotesystemv1.firebaseapp.com",
-  projectId: "parlementvotesystemv1",
-  storageBucket: "parlementvotesystemv1.firebasestorage.app",
-  messagingSenderId: "1014390957615",
-  appId: "1:1014390957615:web:2ced35e18d4236451488da"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+<footer id="site-footer"></footer>
 
-// Roles we display (order matters) — added 'relations'
-const ROLES = [
-  { key: 'pres', title: 'Président' },
-  { key: 'vice', title: 'Vice-Président' },
-  { key: 'sec', title: 'Secrétaire Général' },
-  { key: 'rapporteur', title: 'Rapporteur' },
-  { key: 'secretaire', title: 'Secrétaire chargé.e de la Citoyenneté' },
-  { key: 'relations', title: 'Chargé·e Relations avec le Parlement et autres organes' }
-];
+<script type="module">
+import { ELECTION } from "./assets/js/config.js";
+import { renderChrome, $ } from "./assets/js/ui.js";
+renderChrome("results");
+$("#edition").textContent = `${ELECTION.title} ${ELECTION.edition}`;
+</script>
+<script type="module">
+import { ROLES } from "./assets/js/config.js";
+import { store, normalizeRole } from "./assets/js/store.js";
+import { $, esc, fmt, pct, avatarFor, countUp, describeError, confetti } from "./assets/js/ui.js";
 
-const rolesContainer = document.getElementById('rolesContainer');
-const subtitleLive = document.getElementById('subtitleLive');
+const state = { candidates: [], voters: [], votes: [], tab: "all", loaded: false };
+const onErr = err => { $("#connError").innerHTML = `<div class="notice err conn-error">⚠️ ${esc(describeError(err))}</div>`; };
+let raf = null; const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); };
+store.watchCandidates(l => { state.candidates = l; state.loaded = true; schedule(); }, onErr);
+store.watchVoters(l => { state.voters = l; schedule(); }, onErr);
+store.watchVotes(l => { state.votes = l; schedule(); }, onErr);
 
-// Prepare DOM sections for each role
-ROLES.forEach(r => {
-  const section = document.createElement('section'); section.className = 'role-section'; section.id = 'role_'+r.key;
-  section.innerHTML = `
-    <div class="role-head">
-      <div class="role-title">${r.title}</div>
-      <div class="role-sub" id="role_sub_${r.key}"></div>
-    </div>
-    <div class="podium" id="podium_${r.key}"></div>
-  `;
-  rolesContainer.appendChild(section);
+function tally(roleKey) {
+  const cands = state.candidates.filter(c => normalizeRole(c.role) === roleKey);
+  const counts = new Map(cands.map(c => [c.id, 0]));
+  state.votes.forEach(v => { if (normalizeRole(v.role) === roleKey && counts.has(v.candidateId)) counts.set(v.candidateId, counts.get(v.candidateId) + 1); });
+  const total = [...counts.values()].reduce((a, b) => a + b, 0);
+  const list = cands.map(c => ({ ...c, n: counts.get(c.id) })).sort((a, b) => b.n - a.n || String(a.name).localeCompare(String(b.name), "fr"));
+  return { list, total };
+}
+
+function renderTabs(roles) {
+  const tabs = [{ key: "all", short: "Tous les postes", icon: "✨" }, ...roles];
+  if (!tabs.some(t => t.key === state.tab)) state.tab = "all";
+  $("#tabs").innerHTML = tabs.map(t => `<button role="tab" aria-selected="${t.key === state.tab}" data-tab="${t.key}">${t.icon} ${esc(t.short)}</button>`).join("");
+}
+$("#tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; state.tab = b.dataset.tab; stopRotate(); render(); });
+
+let lastLeaders = {};
+function render() {
+  // Indicateurs
+  const votedIds = new Set(state.votes.map(v => v.voterId));
+  const registered = state.voters.length;
+  countUp($("#kBallots"), state.votes.length);
+  countUp($("#kVoted"), votedIds.size);
+  $("#kTurnout").textContent = registered ? pct(votedIds.size, registered) + " %" : "—";
+  const vById = new Map(state.voters.map(v => [v.id, v]));
+  const dVoted = new Set(state.votes.map(v => v.district || (vById.get(v.voterId) || {}).district).filter(Boolean));
+  countUp($("#kDistricts"), dVoted.size);
+  if (!state.loaded) return;
+
+  const roles = ROLES.filter(r => state.candidates.some(c => normalizeRole(c.role) === r.key));
+  renderTabs(roles);
+  const shown = state.tab === "all" ? roles : roles.filter(r => r.key === state.tab);
+  if (!roles.length) { $("#results").innerHTML = `<div class="empty-state" style="margin-top:22px"><span class="big">🗂️</span>Aucun candidat enregistré pour le moment.</div>`; }
+  else $("#results").innerHTML = shown.map(r => {
+    const { list, total } = tally(r.key);
+    const top = [list[1], list[0], list[2]]; // ordre visuel : 2e, 1er, 3e
+    const cls = ["p2", "p1", "p3"], medal = ["🥈", "🥇", "🥉"], place = ["2", "1", "3"];
+    const leader = list[0] && list[0].n > 0 ? list[0] : null;
+    return `<article class="card result-card">
+      <div class="result-head"><span style="font-size:30px">${r.icon}</span><h2>${esc(r.title)}</h2>
+        <span class="chip ${total ? "chip-green" : ""}">${fmt(total)} vote${total > 1 ? "s" : ""}</span></div>
+      <div class="podium">${top.map((c, i) => c ? `
+        <div class="pod ${cls[i]} ${c.n === 0 ? "ghost" : ""}">
+          <div class="ava-wrap">${i === 1 && leader ? `<span class="crown" aria-hidden="true">👑</span>` : ""}<img src="${esc(avatarFor(c))}" alt=""><span class="medal" aria-hidden="true">${medal[i]}</span></div>
+          <div class="nm">${esc(c.name)}</div>
+          <div class="meta">${c.district ? "📍 " + esc(c.district) + " · " : ""}${fmt(c.n)} voix</div>
+          <div class="block"><span class="pl">${place[i]}</span><span class="pc">${pct(c.n, total)} %</span></div>
+        </div>` : `<div class="pod ${cls[i]} ghost"><div class="block"><span class="pl">${place[i]}</span></div></div>`).join("")}
+      </div>
+      <ol class="ranking" aria-label="Classement complet — ${esc(r.title)}">${list.map((c, i) => `
+        <li><span class="rk">${i + 1}</span><img src="${esc(avatarFor(c))}" alt="">
+          <div class="bar-wrap"><div class="bar-label"><span>${esc(c.name)}</span><span class="muted">${pct(c.n, total)} %</span></div>
+          <div class="bar"><span style="width:${pct(c.n, total)}%"></span></div></div>
+          <span class="vv">${fmt(c.n)}<small>voix</small></span></li>`).join("")}
+      </ol></article>`;
+  }).join("");
+
+  // Petite fête quand un nouveau leader apparaît
+  roles.forEach(r => { const { list } = tally(r.key); const id = list[0] && list[0].n > 0 ? list[0].id : null;
+    if (lastLeaders[r.key] !== undefined && id && lastLeaders[r.key] !== id && document.body.classList.contains("presenting")) confetti(innerWidth / 2, 200, 60);
+    lastLeaders[r.key] = id; });
+
+  // Participation par département
+  const byD = new Map();
+  state.voters.forEach(v => { const d = v.district || "Non précisé"; const o = byD.get(d) || { reg: 0, voted: 0 }; o.reg++; if (votedIds.has(v.id)) o.voted++; byD.set(d, o); });
+  const rows = [...byD.entries()].sort((a, b) => pct(b[1].voted, b[1].reg) - pct(a[1].voted, a[1].reg) || a[0].localeCompare(b[0], "fr"));
+  $("#dTotal").textContent = `${byD.size} département${byD.size > 1 ? "s" : ""}`;
+  $("#districtBars").innerHTML = rows.length ? rows.map(([d, o]) => `
+    <div class="row"><span>${esc(d)}</span><div class="bar"><span style="width:${pct(o.voted, o.reg)}%"></span></div><span class="n">${o.voted}/${o.reg}</span></div>`).join("")
+    : `<p class="muted">Aucun électeur inscrit.</p>`;
+}
+
+/* Mode projection : plein écran + rotation automatique des postes */
+let rotate = null;
+function stopRotate() { clearInterval(rotate); rotate = null; }
+$("#presentBtn").addEventListener("click", async () => {
+  const on = !document.body.classList.contains("presenting");
+  document.body.classList.toggle("presenting", on);
+  $("#presentBtn").textContent = on ? "✖ Quitter la projection" : "📺 Mode projection";
+  try { on ? await document.documentElement.requestFullscreen?.() : document.fullscreenElement && await document.exitFullscreen(); } catch (e) {}
+  stopRotate();
+  if (on) rotate = setInterval(() => {
+    const keys = ["all", ...ROLES.filter(r => state.candidates.some(c => normalizeRole(c.role) === r.key)).map(r => r.key)];
+    state.tab = keys[(keys.indexOf(state.tab) + 1) % keys.length]; render();
+  }, 12000);
 });
-
-// deterministic child avatar generator (same approach as index)
-function seededRandom(seed) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return function(){ h += 0x6D2B79F5; let t = Math.imul(h ^ (h >>> 15), 1 | h); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-function childAvatarDataUrl(seed){ const rnd = seededRandom(seed || String(Math.random())); const skinTones=['#f6d6b8','#f0c8a0','#e6b38a','#d39a6c','#b58155']; const scarf=['#08a200','#f7d117','#d91f2a','#3b82f6']; const bg=['#fff','#fffaf0','#f7fff9']; const skin = skinTones[Math.floor(rnd()*skinTones.length)]; const sc = scarf[Math.floor(rnd()*scarf.length)]; const b = bg[Math.floor(rnd()*bg.length)]; const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 120 120'><rect width='120' height='120' rx='14' fill='${b}'/><g transform='translate(10,10)'><circle cx='50' cy='40' r='28' fill='${skin}'/><circle cx='40' cy='36' r='3' fill='#0b2b3a'/><circle cx='60' cy='36' r='3' fill='#0b2b3a'/><path d='M40,48 Q50,56 60,48' stroke='#0b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/><path d='M22,32 Q42,18 78,28 Q62,18 38,22 Z' fill='#2f1b0b' opacity='0.95'/><g transform='translate(0,72)'><rect x='0' y='0' width='120' height='18' fill='${sc}'/></g></g></svg>`; return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg); }
-
-// compute top3 and percent
-function computePodium(candidates, votes){
-  const counts = {};
-  candidates.forEach(c => counts[c.id] = 0);
-  votes.forEach(v => { if(v && v.candidateId && counts.hasOwnProperty(v.candidateId)) counts[v.candidateId]++ });
-  const list = candidates.map(c => ({ ...c, votes: counts[c.id] || 0 }));
-  list.sort((a,b) => b.votes - a.votes);
-  const total = list.reduce((s,c)=>s+c.votes,0) || 0;
-  const top3 = list.slice(0,3).map((c, idx) => ({ place: idx+1, id: c.id, name: c.name, imageUrl: c.imageUrl, votes: c.votes, percent: total>0? Math.round((c.votes/total)*100):0 }));
-  return { top3, total };
-}
-
-/* Robust normalize: prefer explicit keys, else heuristics */
-function normalizeRoleKeyFromString(raw){
-  if(!raw) return '';
-  const r = String(raw).toLowerCase().normalize ? String(raw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'') : String(raw).toLowerCase();
-  // direct match to our keys
-  if(['pres','vice','sec','rapporteur','secretaire','relations'].includes(r)) return r;
-  // heuristics
-  if(r.includes('relations') || r.includes('parlement') || r.includes('organe') || r.includes('relation')) return 'relations';
-  if(r.includes('citoy')) return 'secretaire';
-  if(r.includes('general') || r.includes('g') && r.includes('secretaire')) return 'sec';
-  if(r.includes('rapport')) return 'rapporteur';
-  if(r.includes('vice')) return 'vice';
-  if(r.includes('pres')) return 'pres';
-  return r; // fallback use raw
-}
-
-// caches
-let candidatesCache = [];
-let votesCache = [];
-
-/* subscribe candidates */
-const candidatesUnsub = db.collection('candidates').onSnapshot(snap => {
-  candidatesCache = [];
-  snap.forEach(d => {
-    const data = { id: d.id, ...d.data() };
-    // normalize role field if present (store both raw and normalized)
-    data.normalizedRole = normalizeRoleKeyFromString(data.role || (data.roleKey || ''));
-    candidatesCache.push(data);
-  });
-  renderAll();
-}, err => { console.error('candidates listener error', err); });
-
-/* subscribe votes */
-const votesUnsub = db.collection('votes').onSnapshot(snap => {
-  votesCache = [];
-  snap.forEach(d => votesCache.push({ id: d.id, ...d.data() }));
-  renderAll();
-}, err => { console.error('votes listener error', err); });
-
-function renderAll(){
-  ROLES.forEach(r => {
-    const roleKey = r.key;
-    // choose candidates whose normalizedRole === roleKey, fallback to match on raw
-    const roleCandidates = candidatesCache.filter(c => {
-      if(c.normalizedRole && typeof c.normalizedRole === 'string'){
-        return c.normalizedRole === roleKey;
-      }
-      // fallback: check raw role text
-      const raw = (c.role||'').toString().toLowerCase();
-      const rn = raw.normalize ? raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'') : raw;
-      if(roleKey === 'secretaire'){
-        return rn.includes('citoy') || rn.includes('secretaire') && rn.includes('citoy') || rn === 'secretaire' || rn.includes('charg');
-      }
-      if(roleKey === 'sec'){
-        return rn.includes('secretaire') && (rn.includes('general') || rn.includes('g') || rn.includes('general'));
-      }
-      if(roleKey === 'rapporteur'){
-        return rn.includes('rapport');
-      }
-      if(roleKey === 'vice'){
-        return rn.includes('vice');
-      }
-      if(roleKey === 'relations'){
-        return rn.includes('relations') || rn.includes('parlement') || rn.includes('organe') || rn.includes('relation');
-      }
-      // default pres
-      return rn === 'pres' || rn.includes('pres') || (!rn.includes('vice') && !rn.includes('rapport') && !rn.includes('secretaire') && !rn.includes('relations') && !rn.includes('parlement') && !rn.includes('organe'));
-    });
-
-    // filter votes by role field in votes (assumes votes store normalized role keys)
-    const roleVotes = votesCache.filter(v => {
-      if(!v || !v.role) return false;
-      const rv = (v.role||'').toString().toLowerCase();
-      return rv === roleKey;
-    });
-
-    const { top3, total } = computePodium(roleCandidates, roleVotes);
-    const podiumEl = document.getElementById('podium_'+roleKey);
-    const subEl = document.getElementById('role_sub_'+roleKey);
-    if(subEl) subEl.textContent = total + ' vote(s)';
-    if(!podiumEl) return;
-    podiumEl.innerHTML = '';
-
-    if(top3.length === 0){
-      podiumEl.innerHTML = '<div class="empty">Aucun candidat pour ce rôle</div>';
-      return;
-    }
-
-    // Always render 3 pods
-    for(let i=0;i<3;i++){
-      const p = top3[i] || { place:i+1, name:'—', votes:0, percent:0, id: ('fallback'+i) };
-      const pod = document.createElement('div'); pod.className = 'pod ' + (i===0? 'first' : i===1? 'second' : 'third');
-      const place = document.createElement('div'); place.className = 'place'; place.textContent = (i===0? '1er' : i===1? '2ème' : '3ème');
-      const avWrap = document.createElement('div'); avWrap.className = 'avatar';
-      const img = document.createElement('img'); img.alt = p.name || '—'; img.width = 120; img.height = 120; img.style.width='120px'; img.style.height='120px'; img.style.objectFit='cover'; img.style.display='block';
-      if(p.imageUrl) img.src = p.imageUrl;
-      else img.src = childAvatarDataUrl(p.id || ('fallback'+i));
-      avWrap.appendChild(img);
-      const name = document.createElement('div'); name.className = 'name'; name.textContent = p.name || '—';
-      const percent = document.createElement('div'); percent.className = 'percent'; percent.textContent = (p.percent||0) + '% • ' + (p.votes||0) + ' voix';
-      pod.appendChild(place); pod.appendChild(avWrap); pod.appendChild(name); pod.appendChild(percent);
-      podiumEl.appendChild(pod);
-    }
-  });
-
-  // Update summarized subtitle
-  const totalVotesAll = votesCache.length;
-  subtitleLive.textContent = totalVotesAll + ' vote(s) enregistrés — mise à jour en temps réel.';
-}
-
-// logo upload (local preview)
-const logoInput = document.getElementById('logoInput');
-const logoPreview = document.getElementById('logoPreview');
-const logoPlaceholder = document.getElementById('logoPlaceholder');
-logoInput.addEventListener('change', function(ev){ const f = ev.target.files && ev.target.files[0]; if(!f) return; const reader = new FileReader(); reader.onload = function(e){ logoPreview.innerHTML = '<img src="'+e.target.result+'" alt="logo">'; }; reader.readAsDataURL(f); });
-
-// initial render
-renderAll();
-
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && document.body.classList.contains("presenting")) $("#presentBtn").click(); });
 </script>
 </body>
 </html>

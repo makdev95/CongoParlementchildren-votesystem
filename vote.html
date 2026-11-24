@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voter — Parlement des Enfants du Congo</title>
+<meta name="description" content="Bureau de vote en ligne du Parlement des Enfants du Congo.">
+<meta name="theme-color" content="#009543">
+<link rel="icon" href="logope.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main>
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🗳️ Bureau de vote · <span id="edition"></span></span>
+      <h1>Choisis ton Bureau exécutif</h1>
+      <p>Un vote par poste. Prends ton temps, lis bien les noms, puis confirme ton choix.</p>
+      <div class="stepper" aria-label="Étapes du vote">
+        <span class="s on" id="st1"><b>1</b>Je trouve mon nom</span>
+        <span class="s" id="st2"><b>2</b>Je vote pour chaque poste</span>
+        <span class="s" id="st3"><b>3</b>C'est terminé&nbsp;!</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div id="connError"></div>
+    <div class="vote-layout">
+      <aside class="voter-panel">
+        <div class="card voter-card" id="voterCard" aria-live="polite"></div>
+      </aside>
+      <section id="ballot" aria-label="Bulletin de vote">
+        <div class="skeleton" style="height:260px"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<!-- Choix de l'électeur -->
+<div class="modal" id="pickerModal" role="dialog" aria-modal="true" aria-labelledby="pickerTitle" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <div><h3 id="pickerTitle">Qui vote ?</h3><p class="muted" style="margin:0">Choisis ton département puis touche ton nom.</p></div>
+      <button class="icon-btn" data-close aria-label="Fermer">✕</button>
+    </div>
+    <div class="picker-tools">
+      <div class="search"><label class="sr-only" for="pickerSearch">Rechercher un nom</label><input id="pickerSearch" type="search" placeholder="Rechercher mon nom…" autocomplete="off" autofocus></div>
+      <div><label class="sr-only" for="pickerDistrict">Département</label><select id="pickerDistrict"></select></div>
+    </div>
+    <div class="voter-grid" id="pickerList"></div>
+  </div>
+</div>
+
+<!-- Confirmation du vote -->
+<div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
+  <div class="modal-card modal-sm">
+    <h3 id="confirmTitle">Confirmer mon vote</h3>
+    <p class="muted" style="margin:0">Poste : <strong id="confirmRole"></strong></p>
+    <div class="confirm-cand"><img id="confirmImg" alt=""><div><strong id="confirmName"></strong><span class="muted" id="confirmDistrict"></span></div></div>
+    <p class="muted" style="font-size:14px;margin-top:12px">⚠️ Une fois confirmé, ton vote ne peut plus être modifié.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>Non, je change</button>
+      <button class="btn btn-primary" id="confirmBtn">✅ Oui, je vote</button>
+    </div>
+  </div>
+</div>
+
+<!-- Remerciements -->
+<div class="modal" id="thanksModal" role="dialog" aria-modal="true" aria-labelledby="thanksTitle" hidden>
+  <div class="modal-card modal-sm thanks">
+    <span class="big">🎉</span>
+    <h2 id="thanksTitle">Merci, <span id="thanksName"></span>&nbsp;!</h2>
+    <p>Tu as voté pour tous les postes. Ta voix a été entendue&nbsp;: c'est ça, la démocratie&nbsp;!</p>
+    <div class="modal-actions" style="justify-content:center">
+      <a class="btn btn-ghost" href="podium.html">🏆 Voir les résultats</a>
+      <button class="btn btn-primary" id="nextVoter" autofocus>👋 Électeur suivant</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { ELECTION } from "./assets/js/config.js";
+import { renderChrome, $ } from "./assets/js/ui.js";
+renderChrome("vote");
+$("#edition").textContent = `Édition ${ELECTION.edition}`;
+</script>
+<script type="module">
+import { ROLES, DISTRICTS } from "./assets/js/config.js";
+import { store, normalizeRole } from "./assets/js/store.js";
+import { $, esc, avatarFor, toast, confetti, openModal, closeModal, bindModalClose, describeError } from "./assets/js/ui.js";
+
+const state = { candidates: [], voters: [], votes: [], voter: null, loaded: { c: false, v: false, b: false } };
+const pickerModal = $("#pickerModal"), confirmModal = $("#confirmModal"), thanksModal = $("#thanksModal");
+[pickerModal, confirmModal, thanksModal].forEach(bindModalClose);
+
+const onErr = err => { $("#connError").innerHTML = `<div class="notice err conn-error">⚠️ ${esc(describeError(err))}</div>`; };
+store.watchCandidates(l => { state.candidates = l; state.loaded.c = true; render(); }, onErr);
+store.watchVoters(l => { state.voters = l.sort((a, b) => String(a.name).localeCompare(String(b.name), "fr")); state.loaded.v = true;
+  if (state.voter) state.voter = l.find(v => v.id === state.voter.id) || null; render(); if (!pickerModal.hidden) renderPicker(); }, onErr);
+store.watchVotes(l => { state.votes = l; state.loaded.b = true; render(); if (!pickerModal.hidden) renderPicker(); }, onErr);
+
+/* --- Données dérivées --- */
+const activeRoles = () => ROLES.filter(r => state.candidates.some(c => normalizeRole(c.role) === r.key));
+function choicesOf(voterId) {
+  const m = new Map();
+  state.votes.forEach(v => { if (v.voterId === voterId) m.set(normalizeRole(v.role), v.candidateId); });
+  return m;
+}
+
+/* --- Rendu --- */
+function render() { renderVoterCard(); renderBallot(); renderStepper(); }
+
+function renderStepper() {
+  const roles = activeRoles(); const ch = state.voter ? choicesOf(state.voter.id) : new Map();
+  const done = state.voter && roles.length && roles.every(r => ch.has(r.key));
+  $("#st1").className = "s " + (state.voter ? "done" : "on");
+  $("#st2").className = "s " + (done ? "done" : state.voter ? "on" : "");
+  $("#st3").className = "s " + (done ? "done on" : "");
+}
+
+function renderVoterCard() {
+  const el = $("#voterCard"); const v = state.voter;
+  if (!v) {
+    el.innerHTML = `<div class="empty-ava" aria-hidden="true">🙋🏾</div>
+      <div class="name">Qui vote&nbsp;?</div>
+      <p class="muted">Commence par trouver ton nom dans la liste.</p>
+      <div class="voter-actions"><button class="btn btn-primary btn-lg" id="pickBtn">🔎 Trouver mon nom</button></div>`;
+    $("#pickBtn").onclick = openPicker; return;
+  }
+  const roles = activeRoles(); const ch = choicesOf(v.id); const n = roles.filter(r => ch.has(r.key)).length;
+  el.innerHTML = `<img class="ava" src="${esc(avatarFor(v))}" alt="">
+    <div class="name">${esc(v.name)}</div>
+    ${v.district ? `<span class="chip chip-cyan">📍 ${esc(v.district)}</span>` : ""}
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${roles.length}" aria-valuenow="${n}" aria-label="Progression du vote"><span style="width:${roles.length ? (n / roles.length) * 100 : 0}%"></span></div>
+    <strong>${n} / ${roles.length} postes votés</strong>
+    <ul class="role-checklist">${roles.map(r => `<li class="${ch.has(r.key) ? "done" : ""}"><span class="tick">${ch.has(r.key) ? "✓" : r.icon}</span><a href="#role-${r.key}">${esc(r.short)}</a></li>`).join("")}</ul>
+    <div class="voter-actions"><button class="btn btn-ghost" id="changeBtn">🔄 Changer d'électeur</button></div>`;
+  $("#changeBtn").onclick = () => { state.voter = null; render(); openPicker(); };
+}
+
+function renderBallot() {
+  const el = $("#ballot");
+  if (!state.loaded.c) return;
+  const roles = activeRoles();
+  if (!roles.length) { el.innerHTML = `<div class="empty-state"><span class="big">🗂️</span><strong>Aucun candidat pour le moment.</strong><p>Les organisateurs n'ont pas encore publié la liste des candidat·es.</p></div>`; return; }
+  const ch = state.voter ? choicesOf(state.voter.id) : new Map();
+  el.innerHTML = roles.map(r => {
+    const list = state.candidates.filter(c => normalizeRole(c.role) === r.key).sort((a, b) => String(a.name).localeCompare(String(b.name), "fr"));
+    const chosen = ch.get(r.key);
+    return `<section class="role-block" id="role-${r.key}" aria-labelledby="h-${r.key}">
+      <div class="role-block-head"><span class="ic">${r.icon}</span><div><h2 id="h-${r.key}">${esc(r.title)}</h2><p>${esc(r.desc)}</p></div>
+        ${chosen ? `<span class="chip chip-green">✓ Voté</span>` : `<span class="chip">${list.length} candidat·e${list.length > 1 ? "s" : ""}</span>`}</div>
+      <div class="cand-grid">${list.map(c => {
+        const isChosen = chosen === c.id, locked = chosen && !isChosen;
+        return `<article class="cand ${isChosen ? "chosen" : ""} ${locked ? "locked" : ""}">
+          <img src="${esc(avatarFor(c))}" alt="" loading="lazy">
+          <div class="nm">${esc(c.name)}</div>
+          ${c.district ? `<div class="ds">📍 ${esc(c.district)}</div>` : ""}
+          ${c.slogan ? `<div class="sl">« ${esc(c.slogan)} »</div>` : ""}
+          <div class="spacer"></div>
+          ${isChosen ? `<button class="btn btn-primary" disabled>✓ Ton choix</button>`
+            : locked ? `<button class="btn btn-ghost" disabled>—</button>`
+            : `<button class="btn btn-cyan" data-vote="${esc(c.id)}" aria-label="Voter pour ${esc(c.name)}, ${esc(r.title)}">Voter</button>`}
+        </article>`;
+      }).join("")}</div></section>`;
+  }).join("");
+}
+
+/* --- Choix de l'électeur --- */
+const pickerSearch = $("#pickerSearch"), pickerDistrict = $("#pickerDistrict");
+pickerDistrict.innerHTML = `<option value="">Tous les départements</option>` + DISTRICTS.map(d => `<option>${esc(d)}</option>`).join("");
+pickerSearch.addEventListener("input", renderPicker);
+pickerDistrict.addEventListener("change", renderPicker);
+function openPicker() { pickerSearch.value = ""; renderPicker(); openModal(pickerModal); }
+function renderPicker() {
+  const q = pickerSearch.value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const d = pickerDistrict.value;
+  // Ajoute les départements présents dans les données mais absents de la configuration
+  const extra = [...new Set(state.voters.map(v => v.district).filter(x => x && !DISTRICTS.includes(x)))];
+  extra.forEach(x => { if (![...pickerDistrict.options].some(o => o.value === x)) pickerDistrict.add(new Option(x, x)); });
+  const roles = activeRoles();
+  const list = state.voters.filter(v => (!d || v.district === d) &&
+    (!q || String(v.name).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q)));
+  const el = $("#pickerList");
+  if (!state.loaded.v) { el.innerHTML = `<p class="muted">Chargement…</p>`; return; }
+  if (!list.length) { el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="big">🤔</span>Aucun nom trouvé. Vérifie l'orthographe ou demande à un organisateur.</div>`; return; }
+  el.innerHTML = list.slice(0, 300).map(v => {
+    const n = choicesOf(v.id).size, complete = roles.length && n >= roles.length;
+    return `<button class="voter-opt ${complete ? "complete" : ""}" data-voter="${esc(v.id)}">
+      <img src="${esc(avatarFor(v))}" alt=""><span><strong>${esc(v.name)}</strong><small>${esc(v.district || "—")}</small></span>
+      ${complete ? `<span class="chip chip-green badge">a voté ✓</span>` : n ? `<span class="chip chip-yellow badge">${n}/${roles.length}</span>` : ""}</button>`;
+  }).join("");
+}
+$("#pickerList").addEventListener("click", e => {
+  const b = e.target.closest("[data-voter]"); if (!b) return;
+  state.voter = state.voters.find(v => v.id === b.dataset.voter) || null;
+  closeModal(pickerModal); render(); bumpIdle();
+  if (state.voter) toast(`Bonjour ${state.voter.name} ! Tu peux voter.`, "success");
+  const first = activeRoles().find(r => !choicesOf(state.voter.id).has(r.key));
+  first && document.getElementById("role-" + first.key)?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+/* --- Vote --- */
+let pending = null;
+$("#ballot").addEventListener("click", e => {
+  const b = e.target.closest("[data-vote]"); if (!b) return;
+  if (!state.voter) { toast("Trouve d'abord ton nom 🙂", "info"); openPicker(); return; }
+  const c = state.candidates.find(x => x.id === b.dataset.vote); if (!c) return;
+  const role = ROLES.find(r => r.key === normalizeRole(c.role));
+  pending = { candidate: c, btn: b };
+  $("#confirmRole").textContent = role ? role.title : "";
+  $("#confirmName").textContent = c.name; $("#confirmDistrict").textContent = c.district ? "📍 " + c.district : "";
+  $("#confirmImg").src = avatarFor(c);
+  openModal(confirmModal);
+});
+$("#confirmBtn").addEventListener("click", async () => {
+  if (!pending || !state.voter) return;
+  const btn = $("#confirmBtn"); btn.disabled = true; btn.textContent = "Envoi…";
+  const { candidate, btn: srcBtn } = pending;
+  const rect = srcBtn.getBoundingClientRect();
+  try {
+    await store.castVote({ voter: state.voter, candidate });
+    closeModal(confirmModal);
+    flyBallot(rect.left + rect.width / 2, rect.top);
+    confetti(rect.left + rect.width / 2, rect.top, 70);
+    toast(`Vote enregistré pour ${candidate.name} — merci !`, "success");
+    bumpIdle();
+    setTimeout(checkComplete, 600);
+  } catch (err) {
+    console.error(err); closeModal(confirmModal);
+    toast(describeError(err), "error", 4000);
+  } finally { btn.disabled = false; btn.textContent = "✅ Oui, je vote"; pending = null; }
+});
+function flyBallot(x, y) {
+  const el = document.createElement("div"); el.className = "ballot-anim"; el.textContent = "✉️";
+  el.style.left = (x - 17) + "px"; el.style.top = (y - 17) + "px"; document.body.appendChild(el);
+  const target = $("#voterCard").getBoundingClientRect();
+  requestAnimationFrame(() => { el.style.transform = `translate(${target.left + target.width / 2 - x}px, ${target.top + 40 - y}px) scale(.6)`; el.style.opacity = "0"; });
+  setTimeout(() => el.remove(), 1000);
+}
+function checkComplete() {
+  if (!state.voter) return;
+  const roles = activeRoles(); const ch = choicesOf(state.voter.id);
+  if (roles.length && roles.every(r => ch.has(r.key))) {
+    $("#thanksName").textContent = state.voter.name.split(" ")[0];
+    openModal(thanksModal); confetti(innerWidth / 2, innerHeight / 3, 160);
+  }
+}
+$("#nextVoter").addEventListener("click", () => { closeModal(thanksModal); resetVoter(); openPicker(); });
+function resetVoter() { state.voter = null; render(); scrollTo({ top: 0, behavior: "smooth" }); }
+
+/* --- Sécurité borne de vote : retour à l'accueil après 2 min d'inactivité --- */
+let idleTimer = null;
+function bumpIdle() { clearTimeout(idleTimer); if (state.voter) idleTimer = setTimeout(() => { [pickerModal, confirmModal, thanksModal].forEach(m => !m.hidden && closeModal(m)); resetVoter(); toast("Session fermée après inactivité.", "info"); }, 120000); }
+["click", "keydown", "touchstart", "scroll"].forEach(ev => addEventListener(ev, () => state.voter && bumpIdle(), { passive: true }));
+
+render();
+</script>
+</body>
+</html>

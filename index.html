@@ -1,363 +1,169 @@
-<!doctype html> 
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Parlement des Enfants — Voter</title>
-<style>
-  :root{--bg:#f4fbff;--card:#fff;--accent:#0277bd;--muted:#55607a}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#e9f7ff);color:#082033;display:flex;align-items:flex-start;justify-content:center;padding:18px}
-  .container{width:100%;max-width:1100px}
-  header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-  .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#066fb2,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
-  h1{margin:0;font-size:20px}
-  .subtitle{color:var(--muted);font-size:13px}
-  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(6,20,40,0.06)}
-  .layout{display:grid;grid-template-columns:1fr 360px;gap:14px}
-  @media (max-width:980px){.layout{grid-template-columns:1fr}}
-  .role{margin-bottom:12px}
-  .role h2{margin:8px 0;font-size:16px}
-  .hlist{display:flex;gap:10px;overflow:auto;padding:8px}
-  .card-candidate{min-width:150px;max-width:160px;background:linear-gradient(180deg,#fff,#10b70a);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(6,182,212,0.06)}
-  .avatar{width:84px;height:84px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:transparent;font-size:36px}
-  .cand-name{font-weight:800;text-align:center}
-  .vote-btn{width:100%;padding:10px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
-  .count{font-weight:900;margin-top:4px;display:none}
-  .aside .small{font-size:13px;color:var(--muted)}
-  .controls{display:flex;gap:8px;margin-top:12px}
-  .btn{padding:9px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
-  .btn.primary{background:var(--accent);color:#fff}
-  .btn.ghost{background:transparent;border:2px solid #e6f7ff}
-  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:14px;z-index:50}
-  .modal.open{display:flex}
-  .modal-card{width:100%;max-width:760px;background:var(--card);padding:14px;border-radius:12px;box-shadow:0 12px 36px rgba(8,24,44,0.08)}
-  label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
-  input[type=text], input[type=password], select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #eef7ff;margin-top:6px}
-  textarea{min-height:80px;resize:vertical}
-  .voter-badge{display:inline-flex;gap:8px;align-items:center;padding:8px;background:#f1fbff;border-radius:10px;border:1px solid #e6f7ff;font-weight:700}
-  .voter-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:380px;overflow:auto;padding-right:8px}
-  .voter-item{padding:8px 10px;border-radius:12px;background:#fff;border:1px solid #e8f7ff;cursor:pointer;display:flex;gap:12px;align-items:center}
-  .voter-avatar{width:40px;height:40px;border-radius:50%;flex:0 0 40px;overflow:hidden;display:inline-block}
-  .muted{color:var(--muted);font-size:13px}
-  .results-table{width:100%;border-collapse:collapse;margin-top:8px}
-  .results-table th,.results-table td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left}
-  #totalWrapper{display:none}
-
-  canvas#confetti{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:9999}
-  .emoji-float{position:fixed;z-index:10000;pointer-events:none;font-size:28px;opacity:0;transform:translateY(0);transition:transform 1s,opacity 1s}
-  .envelope-fly{position:fixed;z-index:12000;width:48px;height:34px;pointer-events:none;transform:translateY(0) scale(1);opacity:0;transition:transform 900ms cubic-bezier(.22,.9,.33,1), opacity 900ms ease;}
-  .envelope-fly.show{ opacity:1; transform:translateY(-220px) scale(1.05); }
-  .toast{position:fixed;right:18px;bottom:18px;background:rgba(6,20,40,0.95);color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(6,20,40,0.2);z-index:13000;opacity:0;transform:translateY(12px);transition:opacity 300ms, transform 300ms;font-weight:700;font-size:13px;}
-  .toast.show{ opacity:1; transform:translateY(0); }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parlement des Enfants du Congo — Élection du Bureau</title>
+<meta name="description" content="Plateforme de vote du Parlement des Enfants de la République du Congo : élection du Bureau exécutif national, avec l'appui de l'UNICEF.">
+<meta name="theme-color" content="#009543">
+<meta property="og:title" content="Parlement des Enfants du Congo — Ta voix compte !">
+<meta property="og:description" content="Élection du Bureau exécutif national du Parlement des Enfants, avec l'appui de l'UNICEF.">
+<meta property="og:image" content="logope.png">
+<link rel="icon" href="logope.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
-<canvas id="confetti"></canvas>
+<header id="site-header"></header>
 
-<div class="container card">
-  <header style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
-    <div class="logo">PE</div>
-    <div>
-      <h1>Parlement des Enfants — Vote 2025</h1>
-      <div class="subtitle">Président, Vice-Président, Secrétaire Général, Rapporteur & Secrétaire — République du Congo</div>
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div>
+        <span class="eyebrow"><span class="live-dot"></span> <span id="heroEdition">Élection du Bureau Exécutif National</span></span>
+        <h1>Ta voix <span class="hl">compte</span>&nbsp;!</h1>
+        <p class="lead">Les jeunes parlementaires de tous les départements du Congo choisissent ensemble leur Bureau exécutif national. Un vote simple, sûr et en temps réel.</p>
+        <div class="hero-actions">
+          <a href="vote.html" class="btn btn-primary btn-lg">🗳️ Je vote maintenant</a>
+          <a href="podium.html" class="btn btn-white btn-lg">🏆 Voir les résultats</a>
+        </div>
+        <div class="hero-partners">
+          <span id="heroFlag"></span><span>République du Congo</span>
+          <span class="sep" aria-hidden="true"></span>
+          <span>Avec l'appui de</span><span id="heroUnicef"></span>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-ring"></div>
+        <div class="hero-logo"><img src="logope.png" alt=""></div>
+        <div class="bubble b1"><span class="ic">🗣️</span>Je suis entendu·e</div>
+        <div class="bubble b2"><span class="ic">✋</span>Je participe</div>
+        <div class="bubble b3"><span class="ic">🌍</span>Je construis demain</div>
+      </div>
     </div>
-  </header>
-
-  <section style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div id="selectedVoter" class="voter-badge">Aucun électeur sélectionné</div>
-    <div><button type="button" class="btn ghost" id="openVoterPicker">Sélectionner électeur</button></div>
+    <svg class="hero-wave" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40c240 26 480 26 720 0s480-26 720 0v20H0z" fill="#f5f9fc"/></svg>
   </section>
 
-  <section class="role">
-    <h2>Président</h2>
-    <div class="hlist" id="presList" aria-live="polite"></div>
-  </section>
-
-  <section class="role">
-    <h2>Vice-Président</h2>
-    <div class="hlist" id="vpList" aria-live="polite"></div>
-  </section>
-
-  <section class="role">
-    <h2>Secrétaire Général</h2>
-    <div class="hlist" id="secList" aria-live="polite"></div>
-  </section>
-
-  <section class="role">
-    <h2>Rapporteur</h2>
-    <div class="hlist" id="rapportList" aria-live="polite"></div>
-  </section>
-
-  <section class="role">
-    <h2>Secrétaire chargé.e de la Citoyenneté</h2>
-    <div class="hlist" id="secretaireList" aria-live="polite"></div>
-  </section>
-
-  <div style="margin-top:10px" class="small">Conseils : sélectionne d'abord ton nom, puis appuie sur "Voter". Chaque électeur peut voter une fois par rôle.</div>
-  <hr style="margin:12px 0">
-  <div id="totalWrapper"><strong>Total votes: <span id="total">0</span></strong> — <span id="last">—</span></div>
-  <footer style="margin-top:12px">Design • Simple & real-time (Firestore)</footer>
-</div>
-
-<div id="voterModal" class="modal" aria-hidden="true">
-  <div class="modal-card">
-    <h3>Sélectionner l'électeur</h3>
-    <div class="small">Tape sur le nom de l'électeur.</div>
-    <div id="voterList" class="voter-list"></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:12px">
-      <button type="button" class="btn ghost" id="closeVoterPicker">Fermer</button>
+  <!-- STATS -->
+  <div class="container">
+    <div class="stats" aria-label="Chiffres de l'élection en direct">
+      <div class="stat reveal"><span class="ic" style="background:var(--green-50)">🧒🏾</span><div><div class="val" id="sVoters">—</div><div class="lbl">Jeunes électeurs</div></div></div>
+      <div class="stat reveal"><span class="ic" style="background:var(--yellow-50)">⭐</span><div><div class="val" id="sCands">—</div><div class="lbl">Candidat·es</div></div></div>
+      <div class="stat reveal"><span class="ic" style="background:var(--red-50)">🗳️</span><div><div class="val" id="sVotes">—</div><div class="lbl">Bulletins déposés</div></div></div>
+      <div class="stat reveal"><span class="ic" style="background:var(--cyan-50)">📍</span><div><div class="val" id="sDistricts">—</div><div class="lbl">Départements représentés</div></div></div>
     </div>
+    <div id="connError"></div>
   </div>
-</div>
 
-<!-- Firebase v8 -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <!-- COMMENT VOTER -->
+  <section class="section" id="comment">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Comment ça marche</span>
+        <h2>Voter en 3 étapes faciles</h2>
+        <p>Chaque jeune parlementaire vote une seule fois pour chaque poste du Bureau.</p>
+      </div>
+      <div class="steps">
+        <div class="card step reveal"><span class="emoji">🔎</span><h3>Je trouve mon nom</h3><p>Je choisis mon département, puis je touche mon nom dans la liste des électeurs.</p></div>
+        <div class="card step reveal"><span class="emoji">👆</span><h3>Je choisis mes candidat·es</h3><p>Pour chaque poste, je touche « Voter » sous la personne de mon choix et je confirme.</p></div>
+        <div class="card step reveal"><span class="emoji">🎉</span><h3>Mon vote est compté</h3><p>Mon bulletin est enregistré en toute sécurité et les résultats s'affichent en direct.</p></div>
+      </div>
+    </div>
+  </section>
 
-<script>
-/* ====== CONFIGURE FIREBASE ====== */
-const firebaseConfig = {
-    apiKey: "AIzaSyA_cdwwXT6DRcEm-555RxXETZ0Pwnv0bcQ",
-    authDomain: "parlementvotesystemv1.firebaseapp.com",
-    projectId: "parlementvotesystemv1",
-    storageBucket: "parlementvotesystemv1.firebasestorage.app",
-    messagingSenderId: "1014390957615",
-    appId: "1:1014390957615:web:2ced35e18d4236451488da",
-    measurementId: "G-J8VSKCE3M8"
+  <!-- POSTES -->
+  <section class="section" style="padding-top:0">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Le Bureau exécutif national</span>
+        <h2>Les postes à pourvoir</h2>
+        <p>Six responsabilités pour représenter les enfants du Congo et faire avancer leurs droits.</p>
+      </div>
+      <div class="roles-grid" id="rolesGrid"></div>
+    </div>
+  </section>
+
+  <!-- DROITS -->
+  <section class="section rights-band" id="droits">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Convention relative aux droits de l'enfant</span>
+        <h2>Nos droits, notre engagement</h2>
+        <p>Le Parlement des Enfants fait vivre la Convention des Nations Unies : chaque enfant a des droits, partout au Congo.</p>
+      </div>
+      <div class="rights-grid">
+        <article class="right-card reveal"><span class="ic">🗣️</span><h3>Être entendu</h3><p>Donner son avis sur les décisions qui nous concernent.</p><span class="art">Article 12</span></article>
+        <article class="right-card reveal"><span class="ic">📚</span><h3>Aller à l'école</h3><p>Une éducation de qualité pour toutes les filles et tous les garçons.</p><span class="art">Article 28</span></article>
+        <article class="right-card reveal"><span class="ic">🩺</span><h3>Être en bonne santé</h3><p>Accès aux soins, à l'eau potable et à une bonne alimentation.</p><span class="art">Article 24</span></article>
+        <article class="right-card reveal"><span class="ic">🛡️</span><h3>Être protégé</h3><p>Contre toutes les formes de violence, d'abus et d'exploitation.</p><span class="art">Article 19</span></article>
+        <article class="right-card reveal"><span class="ic">🤝</span><h3>Ne pas être discriminé</h3><p>Les mêmes droits pour tous, quelles que soient nos différences.</p><span class="art">Article 2</span></article>
+        <article class="right-card reveal"><span class="ic">🪪</span><h3>Avoir une identité</h3><p>Un nom, une nationalité et un acte de naissance.</p><span class="art">Articles 7 &amp; 8</span></article>
+        <article class="right-card reveal"><span class="ic">⚽</span><h3>Jouer et se reposer</h3><p>Le droit aux loisirs, au sport, à la culture et aux arts.</p><span class="art">Article 31</span></article>
+        <article class="right-card reveal"><span class="ic">💬</span><h3>S'informer, s'exprimer</h3><p>Chercher, recevoir et partager des idées librement.</p><span class="art">Article 13</span></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA + PARTENAIRES -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-band reveal">
+        <div>
+          <h2>Prêt·e à faire entendre ta voix&nbsp;?</h2>
+          <p>Le vote est ouvert. Ton choix aide à construire un Congo qui écoute ses enfants.</p>
+        </div>
+        <div class="actions">
+          <a href="vote.html" class="btn btn-yellow btn-lg">🗳️ Aller voter</a>
+          <a href="podium.html" class="btn btn-white btn-lg">Résultats en direct</a>
+        </div>
+      </div>
+      <div class="partners reveal" style="margin-top:56px">
+        <div class="partner"><img class="round" src="logope.png" alt="Logo du Parlement des Enfants du Congo"><span>Parlement des Enfants<br>du Congo</span></div>
+        <div class="partner" id="partnerFlag"></div>
+        <div class="partner" id="partnerUnicef"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script type="module">
+import { ELECTION, ROLES } from "./assets/js/config.js";
+import { renderChrome, flagSvg, unicefLogo, countUp, revealOnScroll, esc, describeError, $ } from "./assets/js/ui.js";
+
+/* Contenu statique (rendu immédiat, même si la base est indisponible) */
+renderChrome("home");
+$("#heroEdition").textContent = `${ELECTION.title} · Édition ${ELECTION.edition}`;
+$("#heroFlag").innerHTML = flagSvg(30);
+$("#heroUnicef").innerHTML = unicefLogo();
+$("#partnerFlag").innerHTML = `${flagSvg(64)}<span>République du Congo<br><small class="muted">${esc(ELECTION.motto)}</small></span>`;
+$("#partnerUnicef").innerHTML = `${unicefLogo()}<span class="muted" style="font-weight:700">pour chaque enfant</span>`;
+$("#rolesGrid").innerHTML = ROLES.map(r => `
+  <article class="card role-tile reveal"><span class="ic">${r.icon}</span>
+  <div><h3>${esc(r.title)}</h3><p>${esc(r.desc)}</p></div></article>`).join("");
+revealOnScroll();
+
+/* Chiffres en direct */
+const { store } = await import("./assets/js/store.js").catch(err => { console.error(err); return {}; });
+if (store) {
+  const state = { voters: [], candidates: [], votes: [] };
+  const onErr = err => { $("#connError").innerHTML = `<div class="notice err conn-error">⚠️ ${esc(describeError(err))}</div>`; };
+  const update = () => {
+    countUp($("#sVoters"), state.voters.length);
+    countUp($("#sCands"), state.candidates.length);
+    countUp($("#sVotes"), state.votes.length);
+    countUp($("#sDistricts"), new Set(state.voters.map(v => v.district).filter(Boolean)).size);
   };
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const FieldValue = firebase.firestore.FieldValue;
-
-/* ====== Utilities (confetti, avatars, ballots, envelope, toast) - unchanged logic ====== */
-const canvas = document.getElementById('confetti');
-const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
-function resizeCanvas(){ if(!canvas) return; canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-window.addEventListener('resize', resizeCanvas); resizeCanvas();
-let confetti = [], confettiRunning = false;
-function spawnConfettiAt(x,y){
-  if(!ctx) return;
-  const colors = ['#1c8a00','#f7d117','#d91f2a','#3b82f6','#a78bfa'];
-  for(let i=0;i<30;i++){
-    confetti.push({ x: x + (Math.random()*40-20), y: y + (Math.random()*20-10), vx: (Math.random()-0.5)*6, vy: (Math.random()*-7)-2, life: 50 + Math.random()*40, size: 6 + Math.random()*6, color: colors[Math.floor(Math.random()*colors.length)] });
-  }
-  if(!confettiRunning) runConfetti();
+  store.watchVoters(l => { state.voters = l; update(); }, onErr);
+  store.watchCandidates(l => { state.candidates = l; update(); }, onErr);
+  store.watchVotes(l => { state.votes = l; update(); }, onErr);
+} else {
+  $("#connError").innerHTML = `<div class="notice err conn-error">⚠️ Impossible de charger la base de données. Vérifiez votre connexion Internet.</div>`;
 }
-function runConfetti(){
-  if(!ctx) return;
-  confettiRunning = true;
-  (function loop(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    for(let i=confetti.length-1;i>=0;i--){
-      const p = confetti[i];
-      p.x += p.vx; p.y += p.vy; p.vy += 0.35; p.life--;
-      ctx.fillStyle = p.color; ctx.fillRect(p.x,p.y,p.size,p.size);
-      if(p.life <= 0 || p.y > canvas.height + 50) confetti.splice(i,1);
-    }
-    if(confetti.length>0) requestAnimationFrame(loop); else confettiRunning=false;
-  })();
-}
-function floatEmojiAt(x,y){
-  const emojis=['🎉','✨','🎈','👏','🥳','🎊'];
-  for(let i=0;i<6;i++){
-    const el=document.createElement('div'); el.className='emoji-float'; el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
-    document.body.appendChild(el);
-    const offsetX = (Math.random()*80 - 40);
-    el.style.left = (x + offsetX) + 'px';
-    el.style.top = (y + (Math.random()*40 - 10)) + 'px';
-    requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateY(-130px) scale(1.15)'; });
-    setTimeout(()=>{ el.style.opacity='0'; try{ el.remove(); }catch(e){} }, 1400);
-  }
-}
-function seededRandom(seed) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < seed.length; i++){ h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return function(){ h += 0x6D2B79F5; let t = Math.imul(h ^ (h >>> 15), 1 | h); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-function childAvatarDataUrl(seed){
-  const rnd = seededRandom(seed || String(Math.random()));
-  const skinTones=['#f6d6b8','#f0c8a0','#e6b38a','#d39a6c','#b58155'];
-  const scarfColors=['#08a200','#f7d117','#d91f2a','#3b82f6','#a78bfa'];
-  const hairColors=['#1f2937','#3b2f2f','#6b4423','#2f1b0b'];
-  const bg=['#ffffff','#fffaf0','#f7fff9','#f0f8ff'][Math.floor(rnd()*4)];
-  const skin=skinTones[Math.floor(rnd()*skinTones.length)];
-  const scarf=scarfColors[Math.floor(rnd()*scarfColors.length)];
-  const hair=hairColors[Math.floor(rnd()*hairColors.length)];
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><rect width='120' height='120' rx='20' fill='${bg}'/><g transform='translate(10,10)'><circle cx='50' cy='40' r='28' fill='${skin}'/><circle cx='40' cy='36' r='3' fill='#0b2b3a'/><circle cx='60' cy='36' r='3' fill='#0b2b3a'/><path d='M40,48 Q50,56 60,48' stroke='#0b2b3a' stroke-width='2' fill='none' stroke-linecap='round'/><path d='M22,32 Q42,18 78,28 Q62,18 38,22 Z' fill='${hair}' opacity='0.95'/><g transform='translate(0,72)'><rect x='0' y='0' width='120' height='18' fill='${scarf}'/><rect x='0' y='0' width='40' height='18' fill='#f7d117'/><rect x='80' y='0' width='40' height='18' fill='#08a200'/></g></g></svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
-function ballotBoxSvg(candidateId){
-  const rnd = seededRandom(String(candidateId || Math.random()));
-  const colors = ['#08a200','#f7d117','#d91f2a'];
-  const color = colors[Math.floor(rnd()*colors.length)];
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'><rect x='4' y='18' width='76' height='52' rx='8' fill='${color}' stroke='#0b2b3a' stroke-width='2' /><rect x='12' y='6' width='60' height='18' rx='6' fill='#ffffff' stroke='#0b2b3a' stroke-width='1.5' /><rect x='22' y='22' width='40' height='8' rx='2' fill='#fff' opacity='0.6' /><rect x='30' y='28' width='24' height='4' rx='2' fill='#0b2b3a' /><rect x='28' y='14' width='28' height='8' rx='1.5' fill='#fff' transform='rotate(-8 42 18)' opacity='0.95' /></svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
-function animateEnvelopeAt(x,y){
-  const el = document.createElement('div'); el.className='envelope-fly';
-  el.innerHTML = `<svg width="48" height="34" viewBox="0 0 48 34" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="34" rx="4" fill="#fff" stroke="#0b2b3a" /><polyline points="4,6 24,20 44,6" fill="none" stroke="#0b2b3a" stroke-width="1.4" /></svg>`;
-  document.body.appendChild(el); el.style.left = (x - 24) + 'px'; el.style.top = (y - 16) + 'px';
-  requestAnimationFrame(()=> el.classList.add('show'));
-  setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 1100);
-}
-function showToast(text, ttl=2200){
-  const t = document.createElement('div'); t.className='toast'; t.textContent = text; document.body.appendChild(t);
-  requestAnimationFrame(()=> t.classList.add('show'));
-  setTimeout(()=> { t.classList.remove('show'); setTimeout(()=>{ try{ t.remove(); }catch(e){} },300); }, ttl);
-}
-
-/* ====== Firestore + UI logic ====== */
-function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
-const presList = document.getElementById('presList');
-const vpList = document.getElementById('vpList');
-const secList = document.getElementById('secList');
-const rapportList = document.getElementById('rapportList');
-const secretaireList = document.getElementById('secretaireList');
-const totalEl = document.getElementById('total');
-const openVoterPicker = document.getElementById('openVoterPicker');
-const voterModal = document.getElementById('voterModal');
-let voterListEl = document.getElementById('voterList'); // we'll re-query if needed
-const closeVoterPicker = document.getElementById('closeVoterPicker');
-const selectedVoterEl = document.getElementById('selectedVoter');
-
-let selectedVoter = null;
-let unsubscribeCandidates = null;
-let unsubscribeVotes = null;
-let unsubscribeVoters = null;
-
-function startRealtime(){
-  if(!db){ console.error('Firestore non initialisé'); return; }
-  if(unsubscribeCandidates) unsubscribeCandidates();
-  unsubscribeCandidates = db.collection('candidates').orderBy('role').onSnapshot(snap => {
-    const buckets = { pres: [], vice: [], sec: [], rapporteur: [], secretaire: [] };
-    snap.forEach(doc => {
-      const d = Object.assign({ id: doc.id }, doc.data());
-      let role = (d.role||'pres').toString();
-      let roleNorm = role.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-      if ( roleNorm === 'secretaire' || roleNorm.includes('citoy') || roleNorm.includes('charg') || roleNorm.includes('citoyenn') ) {
-        buckets.secretaire.push(d);
-      } else if ( roleNorm === 'sec' || roleNorm.includes('secretaire general') || roleNorm.includes('secretairegeneral') || roleNorm.includes('general') || roleNorm.includes('secretaire_g') ) {
-        buckets.sec.push(d);
-      } else if(roleNorm === 'vice' || roleNorm.includes('vice')) {
-        buckets.vice.push(d);
-      } else if(roleNorm === 'rapporteur' || roleNorm.includes('rapport')) {
-        buckets.rapporteur.push(d);
-      } else {
-        buckets.pres.push(d);
-      }
-    });
-    renderCandidates(buckets);
-  });
-
-  if(unsubscribeVotes) unsubscribeVotes();
-  unsubscribeVotes = db.collection('votes').orderBy('ts','desc').onSnapshot(snap => {
-    if(totalEl) totalEl.textContent = snap.size;
-  });
-}
-
-function renderCandidates(buckets){
-  if(presList) presList.innerHTML=''; if(vpList) vpList.innerHTML=''; if(secList) secList.innerHTML=''; if(rapportList) rapportList.innerHTML=''; if(secretaireList) secretaireList.innerHTML='';
-  (buckets.pres||[]).forEach(c => presList.appendChild(makeCard(c)));
-  (buckets.vice||[]).forEach(c => vpList.appendChild(makeCard(c)));
-  (buckets.sec||[]).forEach(c => secList.appendChild(makeCard(c)));
-  (buckets.rapporteur||[]).forEach(c => rapportList.appendChild(makeCard(c)));
-  (buckets.secretaire||[]).forEach(c => secretaireList.appendChild(makeCard(c)));
-}
-
-function makeCard(candidate){
-  const card = document.createElement('div'); card.className='card-candidate';
-  const avatar = document.createElement('div'); avatar.className='avatar';
-  const img = document.createElement('img');
-  img.src = ballotBoxSvg(candidate.id || uid('c'));
-  img.width = 84; img.height = 84; img.alt = 'boite de vote';
-  img.style.width = '84px'; img.style.height = '84px'; img.style.display = 'block';
-  avatar.appendChild(img);
-  const name = document.createElement('div'); name.className='cand-name'; name.textContent = candidate.name || '—';
-  const btn = document.createElement('button'); btn.type='button'; btn.className='vote-btn'; btn.textContent='Voter';
-  const count = document.createElement('div'); count.className='count'; count.textContent = (candidate.votes||0);
-  btn.addEventListener('click', (e)=> voteCandidate(candidate, e.currentTarget));
-  card.appendChild(avatar); card.appendChild(name); card.appendChild(btn); card.appendChild(count);
-  return card;
-}
-
-async function voteCandidate(candidate, btnElem){
-  if(!selectedVoter){ alert("Veuillez d'abord sélectionner votre nom."); return; }
-  const role = (candidate.role || 'pres').toLowerCase();
-  try{
-    const q = await db.collection('votes').where('voterId','==', selectedVoter.id).where('role','==', role).limit(1).get();
-    if(!q.empty){ alert("Cet électeur a déjà voté pour ce rôle."); return; }
-    const voteRef = db.collection('votes').doc();
-    const candRef = db.collection('candidates').doc(candidate.id);
-    await db.runTransaction(async (t)=>{
-      t.set(voteRef, { voterId: selectedVoter.id, voterName: selectedVoter.name, candidateId: candidate.id, candidateName: candidate.name, role, ts: new Date().toISOString() });
-      t.update(candRef, { votes: FieldValue.increment(1) });
-    });
-    try{
-      const rect = btnElem.getBoundingClientRect();
-      const x = rect.left + rect.width/2;
-      const y = rect.top + rect.height/2;
-      animateEnvelopeAt(x,y);
-      spawnConfettiAt(x,y);
-      floatEmojiAt(x,y);
-    }catch(e){ console.warn('animation position failed', e); }
-    showToast('Vote enregistré — merci !');
-  }catch(err){
-    console.error('vote error', err);
-    alert('Erreur lors du vote : ' + (err.message || err));
-  }
-}
-
-/* ====== voter picker (now real-time while modal open) ====== */
-openVoterPicker && openVoterPicker.addEventListener('click', ()=> {
-  if(!voterListEl) voterListEl = document.getElementById('voterList');
-  if(!voterListEl){ alert('Impossible d\'ouvrir la liste des électeurs (élément introuvable).'); return; }
-  voterModal.classList.add('open'); voterModal.setAttribute('aria-hidden','false');
-  // unsubscribe previous if any
-  if(unsubscribeVoters) { try{ unsubscribeVoters(); }catch(e){} unsubscribeVoters = null; }
-  // guard Firestore
-  if(!db){ voterListEl.innerHTML = '<div class="muted">Erreur: Firestore non initialisé.</div>'; return; }
-  voterListEl.innerHTML = '<div class="muted">Chargement...</div>';
-  unsubscribeVoters = db.collection('voters').orderBy('name').onSnapshot(snap => {
-    try{
-      voterListEl.innerHTML = '';
-      if(snap.empty){ const p = document.createElement('div'); p.className='muted'; p.textContent='Aucun électeur disponible.'; voterListEl.appendChild(p); return; }
-      snap.forEach(doc => {
-        const v = Object.assign({ id: doc.id }, doc.data());
-        const it = document.createElement('div'); it.className='voter-item';
-        const imgWrap = document.createElement('div'); imgWrap.className='voter-avatar';
-        const img = document.createElement('img'); img.src = childAvatarDataUrl(v.id); img.width = 40; img.height = 40; img.style.display='block'; img.style.width='40px'; img.style.height='40px'; img.style.objectFit='cover';
-        imgWrap.appendChild(img); it.appendChild(imgWrap);
-        const s = document.createElement('strong'); s.textContent = v.name || '—'; it.appendChild(s);
-        it.addEventListener('click', ()=> {
-          selectedVoter = { id: v.id, name: v.name, emoji: v.emoji || '' };
-          selectedVoterEl.textContent = (v.emoji?v.emoji+' ':'') + (v.name||'—');
-          // close modal and unsubscribe voter listener
-          voterModal.classList.remove('open'); voterModal.setAttribute('aria-hidden','true');
-          if(unsubscribeVoters){ try{ unsubscribeVoters(); }catch(e){} unsubscribeVoters = null; }
-        });
-        voterListEl.appendChild(it);
-      });
-    }catch(e){
-      console.error('render voters snapshot error', e);
-      voterListEl.innerHTML = '<div class="muted">Erreur affichage électeurs</div>';
-    }
-  }, err => {
-    console.error('voters onSnapshot error', err);
-    voterListEl.innerHTML = '<div class="muted">Erreur chargement électeurs</div>';
-    showToast('Erreur chargement électeurs', 2500);
-  });
-});
-
-closeVoterPicker && closeVoterPicker.addEventListener('click', ()=> {
-  voterModal.classList.remove('open'); voterModal.setAttribute('aria-hidden','true');
-  if(unsubscribeVoters){ try{ unsubscribeVoters(); }catch(e){} unsubscribeVoters = null; }
-});
-
-/* ====== start listeners ====== */
-startRealtime();
-
 </script>
 </body>
 </html>

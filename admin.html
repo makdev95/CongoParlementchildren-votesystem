@@ -1,314 +1,377 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Parlement des Enfants — Admin</title>
-<style>
-  :root{--bg:#f4fbff;--card:#fff;--accent:#0277bd;--muted:#55607a}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#e9f7ff);color:#082033;display:flex;align-items:flex-start;justify-content:center;padding:18px}
-  .container{width:100%;max-width:1100px}
-  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(6,20,40,0.06)}
-  h1{margin:0 0 12px 0}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  label{display:block;margin-top:8px}
-  input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #eef7ff}
-  .btn{padding:8px 12px;border-radius:8px;border:0;background:#eef9ff;cursor:pointer;font-weight:700}
-  .btn.primary{background:var(--accent);color:#fff}
-  .list{margin-top:12px;padding:8px;border-radius:8px;border:1px solid #f1f5f9;max-height:300px;overflow:auto}
-  .row{display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid #f7fbff}
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:8px;border-bottom:1px solid #eee}
-  small.role-label{display:block;color:#666;font-size:12px}
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administration — Parlement des Enfants du Congo</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0c2340">
+<link rel="icon" href="logope.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>Administration — Gérer candidats & électeurs</h1>
+<header id="site-header"></header>
 
-      <div class="grid">
-        <div>
-          <label>Nom du candidat</label>
-          <input id="candName" type="text" placeholder="Ex: Aminata" />
-          <label>Image (URL) — optionnel</label>
-          <input id="candImage" type="text" placeholder="https://..." />
-          <label>Emoji (optionnel)</label>
-          <input id="candEmoji" type="text" placeholder="🧑‍🎓" />
-          <label>Rôle</label>
-          <select id="candRole">
-            <option value="pres">Président</option>
-            <option value="vice">Vice-Président</option>
-            <option value="sec">Secrétaire Général</option>
-            <option value="rapporteur">Rapporteur</option>
-            <option value="secretaire">Secrétaire chargé.e de la Citoyenneté</option>
-            <option value="relations">Chargé·e Relations avec le Parlement et autres organes</option>
-          </select>
-          <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
-            <button id="addCandidate" class="btn primary">Ajouter candidat</button>
-          </div>
-        </div>
-
-        <div>
-          <label>Nom de l'électeur</label>
-          <input id="vName" type="text" placeholder="Ex: Koffi" />
-          <label>Emoji (optionnel)</label>
-          <input id="vEmoji" type="text" placeholder="😀" />
-          <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
-            <button id="addVoter" class="btn primary">Ajouter électeur</button>
-          </div>
-
-          <hr style="margin:12px 0" />
-          <label>Ajouter des électeurs en masse (une ligne = un nom)</label>
-          <textarea id="bulkVoters" placeholder="Koffi"></textarea>
-          <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
-            <button id="bulkAdd" class="btn">Ajouter en masse</button>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:12px">
-        <h3>Liste des candidats</h3>
-        <div id="candidatesList" class="list"></div>
-      </div>
-
-      <div style="margin-top:12px">
-        <h3>Votes (tableau en temps réel)</h3>
-        <div style="margin-bottom:8px">
-          <button id="refreshVotes" class="btn">Rafraîchir</button>
-          <button id="exportVotersByCandidate" class="btn">Exporter JSON</button>
-          <button id="resetVotes" class="btn">Réinitialiser votes</button>
-        </div>
-        <div id="votesTableWrap" class="list">
-          <table id="votesTable"><thead><tr><th>Candidat</th><th>Rôle</th><th>Nombre voix</th><th>Électeurs</th></tr></thead><tbody></tbody></table>
-        </div>
-      </div>
-    </div>
+<!-- Connexion -->
+<section class="auth-wrap" id="authView" hidden>
+  <div class="card auth-card">
+    <img src="logope.png" alt="" width="84" height="84">
+    <h1 style="font-size:26px">Espace organisateurs</h1>
+    <p class="muted">Connectez-vous avec le compte administrateur Firebase.</p>
+    <form id="loginForm" novalidate>
+      <label for="email">Adresse e-mail</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">Mot de passe</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button class="btn btn-primary btn-block" style="margin-top:20px" type="submit" id="loginBtn">Se connecter</button>
+      <div class="err" id="loginErr" role="alert"></div>
+    </form>
   </div>
+</section>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script>
-/* Firebase config — remplace si besoin */
-const firebaseConfig = {
-  apiKey: "AIzaSyA_cdwwXT6DRcEm-555RxXETZ0Pwnv0bcQ",
-  authDomain: "parlementvotesystemv1.firebaseapp.com",
-  projectId: "parlementvotesystemv1",
-  storageBucket: "parlementvotesystemv1.firebasestorage.app",
-  messagingSenderId: "1014390957615",
-  appId: "1:1014390957615:web:2ced35e18d4236451488da"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const FieldValue = firebase.firestore.FieldValue;
+<!-- Tableau de bord -->
+<div class="admin-layout" id="adminView" hidden>
+  <aside class="admin-side" role="tablist" aria-label="Sections d'administration">
+    <button class="tab" role="tab" data-tab="overview" aria-selected="true">📊 Vue d'ensemble</button>
+    <button class="tab" role="tab" data-tab="candidates" aria-selected="false">⭐ Candidat·es</button>
+    <button class="tab" role="tab" data-tab="voters" aria-selected="false">🧒🏾 Électeurs</button>
+    <button class="tab" role="tab" data-tab="results" aria-selected="false">🏆 Résultats détaillés</button>
+    <button class="tab" role="tab" data-tab="data" aria-selected="false">🗄️ Données &amp; sécurité</button>
+    <div class="who"><div id="whoEmail"></div><button class="btn btn-sm btn-ghost" style="margin-top:10px;color:#fff" id="logoutBtn">Se déconnecter</button></div>
+  </aside>
 
-/* DOM refs */
-const candName = document.getElementById('candName');
-const candImage = document.getElementById('candImage');
-const candEmoji = document.getElementById('candEmoji');
-const candRole = document.getElementById('candRole');
-const addCandidateBtn = document.getElementById('addCandidate');
+  <main class="admin-main">
+    <div id="connError"></div>
 
-const vName = document.getElementById('vName');
-const vEmoji = document.getElementById('vEmoji');
-const addVoterBtn = document.getElementById('addVoter');
-const bulkVoters = document.getElementById('bulkVoters');
-const bulkAddBtn = document.getElementById('bulkAdd');
+    <!-- Vue d'ensemble -->
+    <section data-panel="overview">
+      <h1>Vue d'ensemble</h1><p class="muted">Suivi en temps réel de l'élection · <span id="ed"></span></p>
+      <div class="admin-kpis">
+        <div class="stat"><span class="ic" style="background:var(--yellow-50)">⭐</span><div><div class="val" id="kC">—</div><div class="lbl">Candidat·es</div></div></div>
+        <div class="stat"><span class="ic" style="background:var(--green-50)">🧒🏾</span><div><div class="val" id="kV">—</div><div class="lbl">Électeurs inscrits</div></div></div>
+        <div class="stat"><span class="ic" style="background:var(--red-50)">🗳️</span><div><div class="val" id="kB">—</div><div class="lbl">Bulletins</div></div></div>
+        <div class="stat"><span class="ic" style="background:var(--cyan-50)">📈</span><div><div class="val" id="kT">—</div><div class="lbl">Participation</div></div></div>
+      </div>
+      <div class="admin-grid two">
+        <div class="card"><h3>👑 En tête par poste</h3><div id="leaders"></div></div>
+        <div class="card"><h3>📍 Participation par département</h3><div class="district-bars" id="ovDistricts"></div></div>
+      </div>
+    </section>
 
-const candidatesList = document.getElementById('candidatesList');
-const votesTableBody = document.querySelector('#votesTable tbody');
-const refreshVotesBtn = document.getElementById('refreshVotes');
-const exportVotersByCandidateBtn = document.getElementById('exportVotersByCandidate');
-const resetVotesBtn = document.getElementById('resetVotes');
+    <!-- Candidats -->
+    <section data-panel="candidates" hidden>
+      <h1>Candidat·es</h1><p class="muted">Ajoutez, modifiez ou retirez les candidat·es de chaque poste.</p>
+      <div class="admin-grid">
+        <form class="card" id="candForm">
+          <h3 id="candFormTitle">Nouveau candidat·e</h3>
+          <input type="hidden" id="cId">
+          <label for="cName">Nom complet *</label><input id="cName" type="text" required placeholder="Ex : Grâce Mabiala">
+          <label for="cRole">Poste *</label><select id="cRole"></select>
+          <label for="cDistrict">Département</label><select id="cDistrict"></select>
+          <label for="cSlogan">Slogan (optionnel)</label><input id="cSlogan" type="text" maxlength="90" placeholder="Ex : Ensemble pour l'école de tous">
+          <label for="cImage">Photo (URL, optionnel)</label><input id="cImage" type="url" placeholder="https://…">
+          <p class="field-hint">Sans photo, un avatar d'enfant est généré automatiquement.</p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" id="cCancel" hidden>Annuler</button>
+            <button type="submit" class="btn btn-primary" id="cSubmit">➕ Ajouter</button>
+          </div>
+        </form>
+        <div class="card">
+          <div class="table-tools">
+            <div class="search"><input type="search" id="cSearch" placeholder="Rechercher…" aria-label="Rechercher un candidat"></div>
+            <select id="cFilter" aria-label="Filtrer par poste"></select>
+          </div>
+          <div class="table-wrap"><table class="data"><thead><tr><th>Candidat·e</th><th>Poste</th><th>Département</th><th>Voix</th><th></th></tr></thead><tbody id="cTable"></tbody></table></div>
+        </div>
+      </div>
+    </section>
 
-/* Helpers */
-function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
-function splitLines(text){ return (''+(text||'')).split(/\r?\n/).map(l=>l.trim()).filter(Boolean); }
+    <!-- Électeurs -->
+    <section data-panel="voters" hidden>
+      <h1>Électeurs</h1><p class="muted">Les jeunes parlementaires autorisés à voter, par département.</p>
+      <div class="admin-grid">
+        <div>
+          <form class="card" id="voterForm">
+            <h3>Ajouter un électeur</h3>
+            <label for="vName">Nom complet *</label><input id="vName" type="text" required placeholder="Ex : Josué Ngoma">
+            <label for="vDistrict">Département *</label><select id="vDistrict" required></select>
+            <div class="modal-actions"><button class="btn btn-primary" type="submit">➕ Ajouter</button></div>
+          </form>
+          <form class="card" id="bulkForm" style="margin-top:20px">
+            <h3>Import en masse</h3>
+            <label for="bulkText">Une ligne par électeur : <code>Nom, Département</code></label>
+            <textarea id="bulkText" placeholder="Josué Ngoma, Brazzaville&#10;Prisca Loemba, Pointe-Noire&#10;Divine Ibara"></textarea>
+            <label for="bulkDistrict">Département par défaut (si absent de la ligne)</label><select id="bulkDistrict"></select>
+            <div class="modal-actions"><button class="btn btn-cyan" type="submit">📥 Importer</button></div>
+          </form>
+        </div>
+        <div class="card">
+          <div class="table-tools">
+            <div class="search"><input type="search" id="vSearch" placeholder="Rechercher…" aria-label="Rechercher un électeur"></div>
+            <select id="vFilter" aria-label="Filtrer par département"></select>
+            <span class="chip" id="vCount"></span>
+          </div>
+          <div class="table-wrap"><table class="data"><thead><tr><th>Électeur</th><th>Département</th><th>Statut</th><th></th></tr></thead><tbody id="vTable"></tbody></table></div>
+        </div>
+      </div>
+    </section>
 
-function roleLabel(key){
-  switch((key||'').toString()){
-    case 'pres': return 'Président';
-    case 'vice': return 'Vice-Président';
-    case 'sec': return 'Secrétaire Général';
-    case 'rapporteur': return 'Rapporteur';
-    case 'secretaire': return 'Secrétaire chargé.e de la Citoyenneté';
-    case 'relations': return 'Chargé·e Relations avec le Parlement et autres organes';
-    default: return key || '—';
-  }
+    <!-- Résultats détaillés -->
+    <section data-panel="results" hidden>
+      <h1>Résultats détaillés</h1><p class="muted">Décompte par poste, avec la liste des votants (confidentiel — réservé aux organisateurs).</p>
+      <div id="detail"></div>
+    </section>
+
+    <!-- Données -->
+    <section data-panel="data" hidden>
+      <h1>Données &amp; sécurité</h1><p class="muted">Exports, maintenance et remise à zéro.</p>
+      <div class="admin-grid two">
+        <div class="card">
+          <h3>📤 Exporter</h3>
+          <p class="muted">Téléchargez les données pour l'archivage ou le procès-verbal.</p>
+          <div style="display:grid;gap:10px">
+            <button class="btn btn-ghost" id="expJson">Votes par candidat (JSON)</button>
+            <button class="btn btn-ghost" id="expVotesCsv">Tous les bulletins (CSV / Excel)</button>
+            <button class="btn btn-ghost" id="expResultsCsv">Résultats par poste (CSV / Excel)</button>
+            <button class="btn btn-ghost" id="expVotersCsv">Liste des électeurs (CSV / Excel)</button>
+          </div>
+        </div>
+        <div class="card danger-zone">
+          <h3>⚠️ Zone sensible</h3>
+          <p class="muted">Pour une nouvelle édition&nbsp;: exportez d'abord les résultats, puis réinitialisez les votes. Les candidats et électeurs sont conservés.</p>
+          <button class="btn btn-danger" id="resetVotes">Réinitialiser tous les votes</button>
+          <button class="btn btn-ghost" id="resetDemo" style="margin-top:10px" hidden>Recharger les données de démonstration</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer id="site-footer"></footer>
+
+<script type="module">
+import { renderChrome } from "./assets/js/ui.js";
+renderChrome("admin");
+</script>
+<script type="module">
+import { ELECTION, ROLES, DISTRICTS, REQUIRE_ADMIN_LOGIN } from "./assets/js/config.js";
+import { store, isDemo, normalizeRole } from "./assets/js/store.js";
+import { $, $$, esc, fmt, pct, avatarFor, toast, countUp, confirmDialog, describeError } from "./assets/js/ui.js";
+
+$("#ed").textContent = `${ELECTION.title} ${ELECTION.edition}`;
+const roleTitle = k => (ROLES.find(r => r.key === normalizeRole(k)) || {}).title || k;
+const districtOpts = (empty) => (empty ? `<option value="">${empty}</option>` : "") + DISTRICTS.map(d => `<option>${esc(d)}</option>`).join("");
+$("#cRole").innerHTML = ROLES.map(r => `<option value="${r.key}">${esc(r.title)}</option>`).join("");
+$("#cFilter").innerHTML = `<option value="">Tous les postes</option>` + ROLES.map(r => `<option value="${r.key}">${esc(r.short)}</option>`).join("");
+$("#cDistrict").innerHTML = districtOpts("— Non précisé —");
+$("#vDistrict").innerHTML = districtOpts("— Choisir —");
+$("#bulkDistrict").innerHTML = districtOpts("— Aucun —");
+$("#vFilter").innerHTML = districtOpts("Tous les départements");
+if (isDemo) $("#resetDemo").hidden = false;
+
+/* ---------- Authentification ---------- */
+let started = false;
+store.onAuth(user => {
+  const ok = !REQUIRE_ADMIN_LOGIN || !!user;
+  $("#authView").hidden = ok; $("#adminView").hidden = !ok;
+  $("#whoEmail").textContent = user ? user.email : "Accès sans connexion";
+  if (ok && !started) { started = true; start(); }
+});
+$("#loginForm").addEventListener("submit", async e => {
+  e.preventDefault(); const btn = $("#loginBtn"); $("#loginErr").textContent = ""; btn.disabled = true; btn.textContent = "Connexion…";
+  try { await store.signIn($("#email").value.trim(), $("#password").value); }
+  catch (err) {
+    const c = err.code || "";
+    $("#loginErr").textContent =
+      c.includes("invalid-credential") || c.includes("wrong-password") || c.includes("user-not-found") ? "E-mail ou mot de passe incorrect." :
+      c.includes("operation-not-allowed") || c.includes("configuration-not-found") ? "La connexion e-mail/mot de passe n'est pas activée dans Firebase (Authentication → Sign-in method)." :
+      c.includes("too-many-requests") ? "Trop de tentatives. Réessayez dans quelques minutes." : "Connexion impossible : " + (err.message || c);
+  } finally { btn.disabled = false; btn.textContent = "Se connecter"; }
+});
+$("#logoutBtn").addEventListener("click", () => store.signOut().then(() => location.reload()));
+
+/* ---------- Onglets ---------- */
+$(".admin-side").addEventListener("click", e => {
+  const b = e.target.closest("[data-tab]"); if (!b) return;
+  $$(".admin-side [data-tab]").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+  $$("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== b.dataset.tab);
+  scrollTo({ top: 0 });
+});
+
+/* ---------- Données temps réel ---------- */
+const state = { candidates: [], voters: [], votes: [] };
+let raf; const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(renderAll); };
+function start() {
+  const onErr = err => { $("#connError").innerHTML = `<div class="notice err" style="margin-bottom:16px">⚠️ ${esc(describeError(err))}</div>`; };
+  let normalized = false;
+  store.watchCandidates(l => { state.candidates = l; schedule();
+    if (!normalized) { normalized = true; store.normalizeCandidateRoles(l).then(n => n && toast(`${n} poste(s) de candidat normalisé(s).`, "info")).catch(() => {}); } }, onErr);
+  store.watchVoters(l => { state.voters = l; schedule(); }, onErr);
+  store.watchVotes(l => { state.votes = l; schedule(); }, onErr);
 }
-
-/* Add candidate */
-addCandidateBtn.addEventListener('click', async ()=>{
-  const name = candName.value && candName.value.trim();
-  if(!name){ alert('Entrez le nom du candidat'); return; }
-  const roleKey = candRole.value || 'pres';
-  const data = {
-    name,
-    imageUrl: candImage.value && candImage.value.trim() || null,
-    emoji: candEmoji.value && candEmoji.value.trim() || '',
-    role: roleKey,
-    roleLabel: roleLabel(roleKey),
-    normalizedRole: (roleKey||'').toString().toLowerCase(),
-    votes: 0,
-    createdAt: new Date().toISOString()
-  };
-  try{
-    await db.collection('candidates').add(data);
-    candName.value=''; candImage.value=''; candEmoji.value='';
-    loadCandidates();
-  }catch(e){ console.error(e); alert('Erreur ajout candidat'); }
-});
-
-/* Add voter */
-addVoterBtn.addEventListener('click', async ()=>{
-  const name = vName.value && vName.value.trim();
-  if(!name){ alert('Entrez le nom de l\'électeur'); return; }
-  try{
-    await db.collection('voters').add({ name, emoji: vEmoji.value && vEmoji.value.trim() || '' });
-    vName.value=''; vEmoji.value='';
-    loadVoters();
-  }catch(e){ console.error(e); alert('Erreur ajout électeur'); }
-});
-
-/* Bulk add voters */
-bulkAddBtn.addEventListener('click', async ()=>{
-  const lines = splitLines(bulkVoters.value || '');
-  if(lines.length===0){ alert('Collez au moins un nom'); return; }
-  const batch = db.batch();
-  const votersRef = db.collection('voters');
-  lines.forEach(line=>{
-    const parts = line.split(/[,|]/).map(p=>p.trim()).filter(Boolean);
-    const name = parts[0];
-    const emoji = parts[1] || '';
-    if(name){ const doc = votersRef.doc(); batch.set(doc, { name, emoji }); }
+const activeRoles = () => ROLES.filter(r => state.candidates.some(c => normalizeRole(c.role) === r.key));
+function counts() {
+  const byCand = new Map(), byVoter = new Map();
+  state.votes.forEach(v => {
+    byCand.set(v.candidateId, (byCand.get(v.candidateId) || []).concat(v));
+    byVoter.set(v.voterId, (byVoter.get(v.voterId) || 0) + 1);
   });
-  try{ await batch.commit(); bulkVoters.value=''; loadVoters(); alert('Ajouté'); }catch(e){ console.error(e); alert('Erreur'); }
-});
+  return { byCand, byVoter };
+}
+function renderAll() { renderOverview(); renderCandidates(); renderVoters(); renderDetail(); }
 
-/* Load candidates list for admin */
-async function loadCandidates(){
-  candidatesList.innerHTML = 'Chargement...';
-  try{
-    const snap = await db.collection('candidates').orderBy('role').get();
-    candidatesList.innerHTML = '';
-    if(snap.empty){ candidatesList.textContent = 'Aucun candidat.'; return; }
-    snap.forEach(doc=>{
-      const c = { id: doc.id, ...doc.data() };
-      const row = document.createElement('div'); row.className='row';
-      const left = document.createElement('div');
-      left.innerHTML = `<strong>${c.name}</strong><small class="role-label">${roleLabel(c.role)}</small>`;
-      const right = document.createElement('div');
-      const del = document.createElement('button'); del.className='btn'; del.textContent='Supprimer';
-      del.addEventListener('click', async () => {
-        if(!confirm('Supprimer ce candidat ?')) return;
-        try{
-          await db.collection('candidates').doc(c.id).delete();
-          // remove related votes
-          const vsnap = await db.collection('votes').where('candidateId','==', c.id).get();
-          const batch = db.batch();
-          vsnap.forEach(vd => batch.delete(db.collection('votes').doc(vd.id)));
-          await batch.commit();
-          loadCandidates(); loadVotesTable();
-        }catch(e){ console.error(e); alert('Erreur suppression'); }
-      });
-      right.appendChild(del);
-      row.appendChild(left); row.appendChild(right);
-      candidatesList.appendChild(row);
-    });
-  }catch(e){ console.error(e); candidatesList.textContent = 'Erreur chargement candidats'; }
+function renderOverview() {
+  const { byVoter } = counts();
+  countUp($("#kC"), state.candidates.length); countUp($("#kV"), state.voters.length); countUp($("#kB"), state.votes.length);
+  $("#kT").textContent = state.voters.length ? pct(byVoter.size, state.voters.length) + " %" : "—";
+  const { byCand } = counts();
+  $("#leaders").innerHTML = activeRoles().map(r => {
+    const l = state.candidates.filter(c => normalizeRole(c.role) === r.key).map(c => ({ ...c, n: (byCand.get(c.id) || []).length })).sort((a, b) => b.n - a.n);
+    const tot = l.reduce((s, c) => s + c.n, 0), top = l[0];
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)">
+      <span style="font-size:22px">${r.icon}</span><div style="flex:1;min-width:0"><strong>${esc(r.short)}</strong><div class="muted" style="font-size:14px">${top && top.n ? esc(top.name) : "Aucun vote"}</div></div>
+      <span class="chip ${top && top.n ? "chip-green" : ""}">${top ? pct(top.n, tot) : 0} % · ${fmt(tot)}</span></div>`;
+  }).join("") || `<p class="muted">Aucun candidat.</p>`;
+  const byD = new Map();
+  state.voters.forEach(v => { const d = v.district || "Non précisé"; const o = byD.get(d) || { reg: 0, voted: 0 }; o.reg++; if (byVoter.has(v.id)) o.voted++; byD.set(d, o); });
+  $("#ovDistricts").innerHTML = [...byD.entries()].sort((a, b) => a[0].localeCompare(b[0], "fr")).map(([d, o]) =>
+    `<div class="row"><span>${esc(d)}</span><div class="bar"><span style="width:${pct(o.voted, o.reg)}%"></span></div><span class="n">${o.voted}/${o.reg}</span></div>`).join("") || `<p class="muted">Aucun électeur.</p>`;
 }
 
-/* Load voters list (not shown but kept) */
-async function loadVoters(){ /* optional: used after adds */ }
-
-/* Votes table real-time (and initial) */
-let votesUnsub = null;
-function listenVotes(){
-  if(votesUnsub) votesUnsub();
-  votesUnsub = db.collection('votes').onSnapshot(snap=>{
-    // Build map candidateId -> [voterName,...]
-    const map = {};
-    const votes = [];
-    snap.forEach(doc => votes.push({ id: doc.id, ...doc.data() }));
-    votes.forEach(v=>{
-      if(!v.candidateId) return;
-      map[v.candidateId] = map[v.candidateId] || [];
-      map[v.candidateId].push(v.voterName || '—');
-    });
-    renderVotesTable(map);
-  }, err => console.error('votes listener', err));
+/* ---------- Candidats ---------- */
+function renderCandidates() {
+  const { byCand } = counts();
+  const q = $("#cSearch").value.trim().toLowerCase(), f = $("#cFilter").value;
+  const rows = state.candidates.filter(c => (!f || normalizeRole(c.role) === f) && (!q || String(c.name).toLowerCase().includes(q)))
+    .sort((a, b) => ROLES.findIndex(r => r.key === normalizeRole(a.role)) - ROLES.findIndex(r => r.key === normalizeRole(b.role)) || String(a.name).localeCompare(String(b.name), "fr"));
+  $("#cTable").innerHTML = rows.map(c => `<tr>
+    <td><span class="who-cell"><img src="${esc(avatarFor(c))}" alt="">${esc(c.name)}</span></td>
+    <td>${esc(roleTitle(c.role))}</td><td>${esc(c.district || "—")}</td><td><strong>${(byCand.get(c.id) || []).length}</strong></td>
+    <td class="actions"><button class="icon-btn" data-edit="${esc(c.id)}" aria-label="Modifier ${esc(c.name)}">✏️</button>
+    <button class="icon-btn danger" data-del="${esc(c.id)}" aria-label="Supprimer ${esc(c.name)}">🗑️</button></td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted" style="text-align:center;padding:30px">Aucun candidat.</td></tr>`;
 }
-
-async function renderVotesTable(map){
-  votesTableBody.innerHTML = '';
-  try{
-    const snap = await db.collection('candidates').orderBy('role').get();
-    if(snap.empty){ votesTableBody.innerHTML = '<tr><td colspan="4">Aucun candidat</td></tr>'; return; }
-    snap.forEach(doc=>{
-      const c = { id: doc.id, ...doc.data() };
-      const voters = map[c.id] || [];
-      const tr = document.createElement('tr');
-      const tdName = document.createElement('td'); tdName.textContent = c.name || '—';
-      const tdRole = document.createElement('td'); tdRole.textContent = roleLabel(c.role || c.normalizedRole || '—');
-      const tdCount = document.createElement('td'); tdCount.textContent = voters.length;
-      const tdList = document.createElement('td'); tdList.textContent = voters.join(', ');
-      tr.appendChild(tdName); tr.appendChild(tdRole); tr.appendChild(tdCount); tr.appendChild(tdList);
-      votesTableBody.appendChild(tr);
-    });
-  }catch(e){ console.error(e); votesTableBody.innerHTML = '<tr><td colspan="4">Erreur</td></tr>'; }
-}
-
-/* Export voters by candidate */
-exportVotersByCandidateBtn.addEventListener('click', async ()=>{
-  try{
-    const snapC = await db.collection('candidates').get();
-    const snapV = await db.collection('votes').get();
-    const map = {};
-    snapV.forEach(d => {
-      const v = d.data();
-      map[v.candidateId] = map[v.candidateId] || [];
-      map[v.candidateId].push({ voterId: v.voterId, voterName: v.voterName, ts: v.ts, role: v.role });
-    });
-    const rows = [];
-    snapC.forEach(d => {
-      const c = { id: d.id, ...d.data() };
-      rows.push({ candidateId: c.id, candidateName: c.name, roleKey: c.role, roleLabel: roleLabel(c.role), voters: map[c.id] || [] });
-    });
-    const blob = new Blob([JSON.stringify({ generatedAt: new Date().toISOString(), rows }, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'voters_by_candidate.json'; a.click(); URL.revokeObjectURL(url);
-  }catch(e){ console.error(e); alert('Erreur export'); }
+$("#cSearch").addEventListener("input", renderCandidates); $("#cFilter").addEventListener("change", renderCandidates);
+function resetCandForm() { $("#candForm").reset(); $("#cId").value = ""; $("#candFormTitle").textContent = "Nouveau candidat·e"; $("#cSubmit").textContent = "➕ Ajouter"; $("#cCancel").hidden = true; }
+$("#cCancel").addEventListener("click", resetCandForm);
+$("#candForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("#cName").value.trim(); if (!name) { toast("Le nom est obligatoire.", "error"); return; }
+  const role = $("#cRole").value;
+  const data = { name, role, roleLabel: roleTitle(role), normalizedRole: role, district: $("#cDistrict").value, slogan: $("#cSlogan").value.trim(), imageUrl: $("#cImage").value.trim() || null };
+  const id = $("#cId").value, btn = $("#cSubmit"); btn.disabled = true;
+  try {
+    if (id) { await store.updateCandidate(id, data); toast("Candidat·e mis·e à jour.", "success"); }
+    else { await store.addCandidate(data); toast(`${name} ajouté·e.`, "success"); }
+    resetCandForm();
+  } catch (err) { console.error(err); toast(describeError(err), "error"); } finally { btn.disabled = false; }
+});
+$("#cTable").addEventListener("click", async e => {
+  const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]");
+  if (ed) {
+    const c = state.candidates.find(x => x.id === ed.dataset.edit); if (!c) return;
+    $("#cId").value = c.id; $("#cName").value = c.name || ""; $("#cRole").value = normalizeRole(c.role);
+    $("#cDistrict").value = c.district || ""; $("#cSlogan").value = c.slogan || ""; $("#cImage").value = c.imageUrl || "";
+    $("#candFormTitle").textContent = "Modifier le candidat·e"; $("#cSubmit").textContent = "💾 Enregistrer"; $("#cCancel").hidden = false;
+    $("#cName").focus(); $("#candForm").scrollIntoView({ behavior: "smooth" });
+  }
+  if (del) {
+    const c = state.candidates.find(x => x.id === del.dataset.del); if (!c) return;
+    const n = state.votes.filter(v => v.candidateId === c.id).length;
+    if (!await confirmDialog({ title: "Supprimer ce candidat·e ?", body: `<p><strong>${esc(c.name)}</strong> (${esc(roleTitle(c.role))}) sera retiré·e${n ? `, ainsi que <strong>${n} vote(s)</strong> reçu(s)` : ""}. Cette action est définitive.</p>`, okText: "Supprimer", danger: true })) return;
+    try { await store.deleteCandidate(c.id); toast("Candidat·e supprimé·e.", "success"); } catch (err) { toast(describeError(err), "error"); }
+  }
 });
 
-/* Reset votes (admin) */
-resetVotesBtn.addEventListener('click', async ()=>{
-  if(!confirm('Réinitialiser tous les votes ?')) return;
-  try{
-    // delete votes collection documents (batched)
-    const snap = await db.collection('votes').get();
-    const batchSize = 400;
-    let batch = db.batch(), count=0;
-    snap.forEach(doc => { batch.delete(db.collection('votes').doc(doc.id)); count++; if(count % batchSize === 0){ batch.commit(); batch = db.batch(); } });
-    await batch.commit();
-
-    // reset candidate vote counters to 0
-    const csnap = await db.collection('candidates').get();
-    const b2 = db.batch();
-    csnap.forEach(doc => b2.update(db.collection('candidates').doc(doc.id), { votes: 0 } ));
-    await b2.commit();
-
-    alert('Votes réinitialisés');
-  }catch(e){ console.error(e); alert('Erreur réinitialisation'); }
+/* ---------- Électeurs ---------- */
+function renderVoters() {
+  const { byVoter } = counts(); const nRoles = activeRoles().length;
+  const q = $("#vSearch").value.trim().toLowerCase(), f = $("#vFilter").value;
+  const rows = state.voters.filter(v => (!f || v.district === f) && (!q || String(v.name).toLowerCase().includes(q)))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name), "fr"));
+  $("#vCount").textContent = `${rows.length} / ${state.voters.length}`;
+  $("#vTable").innerHTML = rows.slice(0, 500).map(v => { const n = byVoter.get(v.id) || 0; return `<tr>
+    <td><span class="who-cell"><img src="${esc(avatarFor(v))}" alt="">${esc(v.name)}</span></td>
+    <td><select class="vd" data-id="${esc(v.id)}" aria-label="Département de ${esc(v.name)}" style="padding:6px 10px;min-width:150px">${districtOpts("— Non précisé —").replace(`<option>${esc(v.district || "")}</option>`, `<option selected>${esc(v.district || "")}</option>`)}</select></td>
+    <td>${n === 0 ? `<span class="chip">Pas encore voté</span>` : n >= nRoles ? `<span class="chip chip-green">A voté ✓</span>` : `<span class="chip chip-yellow">${n}/${nRoles}</span>`}</td>
+    <td class="actions"><button class="icon-btn danger" data-vdel="${esc(v.id)}" aria-label="Supprimer ${esc(v.name)}">🗑️</button></td></tr>`; }).join("")
+    || `<tr><td colspan="4" class="muted" style="text-align:center;padding:30px">Aucun électeur.</td></tr>`;
+}
+$("#vSearch").addEventListener("input", renderVoters); $("#vFilter").addEventListener("change", renderVoters);
+$("#vTable").addEventListener("change", async e => {
+  const s = e.target.closest("select.vd"); if (!s) return;
+  try { await store.updateVoter(s.dataset.id, { district: s.value }); toast("Département mis à jour.", "success"); } catch (err) { toast(describeError(err), "error"); }
+});
+$("#vTable").addEventListener("click", async e => {
+  const b = e.target.closest("[data-vdel]"); if (!b) return;
+  const v = state.voters.find(x => x.id === b.dataset.vdel); if (!v) return;
+  const n = state.votes.filter(x => x.voterId === v.id).length;
+  if (!await confirmDialog({ title: "Supprimer cet électeur ?", body: `<p><strong>${esc(v.name)}</strong> sera retiré·e de la liste${n ? ` et ses <strong>${n} vote(s)</strong> seront annulés` : ""}.</p>`, okText: "Supprimer", danger: true })) return;
+  try { await store.deleteVoter(v.id); toast("Électeur supprimé.", "success"); } catch (err) { toast(describeError(err), "error"); }
+});
+$("#voterForm").addEventListener("submit", async e => {
+  e.preventDefault(); const name = $("#vName").value.trim(), district = $("#vDistrict").value;
+  if (!name || !district) { toast("Nom et département obligatoires.", "error"); return; }
+  if (state.voters.some(v => String(v.name).toLowerCase() === name.toLowerCase() && v.district === district) &&
+      !await confirmDialog({ title: "Doublon possible", body: `<p>${esc(name)} existe déjà dans ${esc(district)}. Ajouter quand même ?</p>`, okText: "Ajouter" })) return;
+  try { await store.addVoter({ name, district, emoji: "" }); $("#vName").value = ""; $("#vName").focus(); toast(`${name} ajouté·e.`, "success"); } catch (err) { toast(describeError(err), "error"); }
+});
+$("#bulkForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const def = $("#bulkDistrict").value;
+  const known = new Map(DISTRICTS.map(d => [d.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""), d]));
+  const list = $("#bulkText").value.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+    const [name, d] = l.split(/[,;|\t]/).map(s => s.trim());
+    const dn = d ? known.get(d.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")) || d : def;
+    return { name, district: dn || "", emoji: "" };
+  }).filter(v => v.name);
+  if (!list.length) { toast("Collez au moins un nom.", "error"); return; }
+  if (!await confirmDialog({ title: `Importer ${list.length} électeur(s) ?`, body: `<p>Exemple : <strong>${esc(list[0].name)}</strong> — ${esc(list[0].district || "sans département")}</p>`, okText: "Importer" })) return;
+  try { await store.addVotersBulk(list); $("#bulkText").value = ""; toast(`${list.length} électeur(s) importé(s).`, "success"); } catch (err) { toast(describeError(err), "error"); }
 });
 
-/* Refresh button */
-refreshVotesBtn.addEventListener('click', ()=> { renderVotesTable({}); });
+/* ---------- Résultats détaillés ---------- */
+function renderDetail() {
+  const { byCand } = counts();
+  $("#detail").innerHTML = activeRoles().map(r => {
+    const l = state.candidates.filter(c => normalizeRole(c.role) === r.key).map(c => ({ ...c, vs: byCand.get(c.id) || [] })).sort((a, b) => b.vs.length - a.vs.length);
+    const tot = l.reduce((s, c) => s + c.vs.length, 0);
+    return `<div class="card" style="margin-top:18px"><div class="result-head"><span style="font-size:24px">${r.icon}</span><h3 style="margin:0">${esc(r.title)}</h3><span class="chip chip-green">${fmt(tot)} vote(s)</span></div>
+      <div class="table-wrap" style="margin-top:14px"><table class="data"><thead><tr><th>#</th><th>Candidat·e</th><th>Voix</th><th>%</th><th>Électeurs</th></tr></thead><tbody>
+      ${l.map((c, i) => `<tr><td>${i + 1}</td><td><span class="who-cell"><img src="${esc(avatarFor(c))}" alt="">${esc(c.name)}</span></td><td><strong>${c.vs.length}</strong></td><td>${pct(c.vs.length, tot)} %</td>
+        <td style="max-width:420px;font-size:13px;color:var(--muted)">${esc(c.vs.map(v => v.voterName || "—").join(", ")) || "—"}</td></tr>`).join("")}
+      </tbody></table></div></div>`;
+  }).join("") || `<div class="empty-state" style="margin-top:18px">Aucun candidat.</div>`;
+}
 
-/* Init */
-loadCandidates();
-listenVotes();
+/* ---------- Exports ---------- */
+const stamp = () => new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+function download(name, content, type) { const url = URL.createObjectURL(new Blob([content], { type })); const a = document.createElement("a"); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+const csv = rows => "\ufeff" + rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
+$("#expJson").addEventListener("click", () => {
+  const { byCand } = counts();
+  const rows = state.candidates.map(c => ({ candidateId: c.id, candidateName: c.name, roleKey: normalizeRole(c.role), roleLabel: roleTitle(c.role), district: c.district || "",
+    voters: (byCand.get(c.id) || []).map(v => ({ voterId: v.voterId, voterName: v.voterName, district: v.district || "", ts: v.ts, role: v.role })) }));
+  download(`voters_by_candidate_${stamp()}.json`, JSON.stringify({ generatedAt: new Date().toISOString(), edition: ELECTION.edition, rows }, null, 2), "application/json");
+});
+$("#expVotesCsv").addEventListener("click", () => download(`bulletins_${stamp()}.csv`, csv([["Date", "Poste", "Candidat", "Électeur", "Département"],
+  ...state.votes.slice().sort((a, b) => String(a.ts).localeCompare(String(b.ts))).map(v => [v.ts, roleTitle(v.role), v.candidateName, v.voterName, v.district || ""])]), "text/csv;charset=utf-8"));
+$("#expResultsCsv").addEventListener("click", () => { const { byCand } = counts(); const rows = [["Poste", "Rang", "Candidat", "Département", "Voix", "%"]];
+  activeRoles().forEach(r => { const l = state.candidates.filter(c => normalizeRole(c.role) === r.key).map(c => ({ ...c, n: (byCand.get(c.id) || []).length })).sort((a, b) => b.n - a.n); const t = l.reduce((s, c) => s + c.n, 0);
+    l.forEach((c, i) => rows.push([r.title, i + 1, c.name, c.district || "", c.n, pct(c.n, t)])); });
+  download(`resultats_${stamp()}.csv`, csv(rows), "text/csv;charset=utf-8"); });
+$("#expVotersCsv").addEventListener("click", () => { const { byVoter } = counts();
+  download(`electeurs_${stamp()}.csv`, csv([["Nom", "Département", "Postes votés"], ...state.voters.map(v => [v.name, v.district || "", byVoter.get(v.id) || 0])]), "text/csv;charset=utf-8"); });
 
+$("#resetVotes").addEventListener("click", async () => {
+  if (!await confirmDialog({ title: "Réinitialiser tous les votes ?", danger: true, okText: "Tout effacer", requireText: "EFFACER",
+    body: `<p>Les <strong>${fmt(state.votes.length)} bulletins</strong> seront définitivement supprimés. Pensez à exporter les résultats avant.</p>` })) return;
+  try { await store.resetVotes(); toast("Tous les votes ont été réinitialisés.", "success"); } catch (err) { toast(describeError(err), "error"); }
+});
+$("#resetDemo").addEventListener("click", async () => { await store.resetDemo(); toast("Données de démonstration rechargées.", "success"); });
 </script>
 </body>
 </html>

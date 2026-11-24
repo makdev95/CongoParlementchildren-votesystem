@@ -1,0 +1,35 @@
+"$schema" = "https://open-api.netlify.com/netlify.schema.json"
+
+# Site statique : aucune étape de build.
+[build]
+  publish = "."
+
+# Raccourcis faciles à retenir (affiches, QR codes)
+[[redirects]]
+  from = "/voter"
+  to = "/vote.html"
+  status = 301
+
+[[redirects]]
+  from = "/resultats"
+  to = "/podium.html"
+  status = 301
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "SAMEORIGIN"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Les fichiers ne sont pas versionnés par empreinte : toujours revalider.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
